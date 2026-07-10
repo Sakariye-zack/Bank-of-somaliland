@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
+import { mediaUrl } from '../lib/media';
 import type { ExchangeRatesLatestResponse, PressReleasesResponse } from '@bos/shared-types';
 
 const CURRENCY_LABELS: Record<string, string> = {
@@ -94,6 +95,9 @@ export function Home() {
           <div className="news-strip">
             {press?.results.map((item) => (
               <article className="news-item" key={item.id}>
+                {item.images.length > 0 && (
+                  <img className="news-item-thumb" src={mediaUrl(item.images[0])} alt="" />
+                )}
                 <div className="date">{item.publish_date}</div>
                 <h4>{item.title}</h4>
               </article>

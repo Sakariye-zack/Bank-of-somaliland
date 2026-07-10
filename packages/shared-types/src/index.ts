@@ -97,6 +97,8 @@ export interface PressRelease {
   title: string;
   featured: boolean;
   body?: string;
+  images: string[];
+  video_url: string | null;
 }
 
 export interface PressReleasesResponse {
@@ -104,6 +106,11 @@ export interface PressReleasesResponse {
   page_size: number;
   total: number;
   results: PressRelease[];
+}
+
+export interface UploadMediaResponse {
+  images: string[];
+  video: string | null;
 }
 
 export type PublicationCategory = 'annual_report' | 'circular' | 'stability_report';

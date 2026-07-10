@@ -4,8 +4,38 @@ import { z } from 'zod';
 import { pool } from '../db/pool';
 import { requireRole } from '../middleware/requireRole';
 import { writeAuditLog } from '../lib/auditLog';
+import { uploadMedia, enforcePerFieldSizeLimits, cleanupFiles, publicUrlFor } from '../lib/upload';
 
 export const adminRouter = Router();
+
+// ---------------------------------------------------------------------------
+// Media upload — content_editor, super_admin. Real files on disk, not URLs
+// the editor has to host themselves.
+// ---------------------------------------------------------------------------
+adminRouter.post('/uploads', requireRole('content_editor', 'super_admin'), (req, res) => {
+  uploadMedia(req, res, (err: unknown) => {
+    if (err) {
+      const message = err instanceof Error ? err.message : 'Upload failed.';
+      return res.status(400).json({ error: { code: 'UPLOAD_FAILED', message } });
+    }
+
+    const files = req.files as { images?: Express.Multer.File[]; video?: Express.Multer.File[] } | undefined;
+    if (!files || (!files.images?.length && !files.video?.length)) {
+      return res.status(400).json({ error: { code: 'NO_FILES', message: 'No files were uploaded.' } });
+    }
+
+    const sizeError = enforcePerFieldSizeLimits(files);
+    if (sizeError) {
+      cleanupFiles(files);
+      return res.status(400).json({ error: { code: 'FILE_TOO_LARGE', message: sizeError } });
+    }
+
+    res.status(201).json({
+      images: (files.images ?? []).map(publicUrlFor),
+      video: files.video?.[0] ? publicUrlFor(files.video[0]) : null,
+    });
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Content editing — content_editor, super_admin
@@ -385,6 +415,56 @@ adminRouter.post('/tenders', requireRole('content_editor', 'super_admin'), async
   });
 
   res.status(201).json({ ...rows[0], title });
+});
+
+// ---------------------------------------------------------------------------
+// Press releases — content_editor, super_admin
+// ---------------------------------------------------------------------------
+const pressReleaseSchema = z.object({
+  title: z.string().min(1).max(300),
+  body: z.string().optional(),
+  publish_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  featured: z.boolean().optional(),
+  images: z.array(z.string()).max(10).optional(),
+  video_url: z.string().nullable().optional(),
+});
+
+adminRouter.post('/press-releases', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const parsed = pressReleaseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Invalid press release payload.' } });
+  }
+  const { title, body, publish_date, featured, images, video_url } = parsed.data;
+
+  const { rows } = await pool.query(
+    `INSERT INTO press_releases (publish_date, content_id, status, featured, video_url)
+     VALUES ($1, uuid_generate_v4(), 'published', $2, $3) RETURNING *`,
+    [publish_date, featured ?? false, video_url ?? null]
+  );
+  const pressRelease = rows[0];
+
+  await pool.query(
+    `INSERT INTO content_translations (content_id, content_table, language_code, title, body)
+     VALUES ($1, 'press_releases', 'en', $2, $3)`,
+    [pressRelease.content_id, title, body ?? '']
+  );
+
+  for (let i = 0; i < (images ?? []).length; i++) {
+    await pool.query(
+      `INSERT INTO press_release_images (press_release_id, image_url, sort_order) VALUES ($1, $2, $3)`,
+      [pressRelease.id, images![i], i]
+    );
+  }
+
+  await writeAuditLog(req, {
+    action: 'create',
+    table_name: 'press_releases',
+    record_id: pressRelease.id,
+    before_value: null,
+    after_value: { ...pressRelease, title, images: images ?? [] },
+  });
+
+  res.status(201).json({ ...pressRelease, title, images: images ?? [] });
 });
 
 // ---------------------------------------------------------------------------

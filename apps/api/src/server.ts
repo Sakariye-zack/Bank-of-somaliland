@@ -1,3 +1,4 @@
+import path from 'node:path';
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
@@ -12,9 +13,13 @@ import { pool } from './db/pool';
 
 const app = express();
 
-app.use(helmet());
+// Uploaded media (press release images/video) is public read content, served
+// cross-origin to the public site — relax CORP so <img>/<video> tags on a
+// different port can actually load it.
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cookieParser());
 app.use(express.json({ limit: '1mb' }));
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
 
 const publicOrigin = process.env.CORS_ORIGIN_PUBLIC || 'http://localhost:5173';
 const adminOrigin = process.env.CORS_ORIGIN_ADMIN || 'http://localhost:5174';

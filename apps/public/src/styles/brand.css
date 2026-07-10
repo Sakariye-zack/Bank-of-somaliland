@@ -390,6 +390,24 @@ section {
   color: #5c5546;
   margin: 0;
 }
+.news-item-thumb {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+.news-gallery-thumb {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.news-gallery-video {
+  max-width: 100%;
+  width: 260px;
+  border-radius: 4px;
+}
 
 .search-panel {
   background: #fff;

@@ -171,7 +171,7 @@ publicRouter.get('/press-releases', async (req, res) => {
 
   const totalRes = await pool.query(`SELECT COUNT(*)::int AS total FROM press_releases WHERE status = 'published'`);
   const { rows } = await pool.query(
-    `SELECT pr.id, pr.publish_date, pr.featured, pr.content_id
+    `SELECT pr.id, pr.publish_date, pr.featured, pr.content_id, pr.video_url
      FROM press_releases pr
      WHERE pr.status = 'published'
      ORDER BY pr.publish_date DESC
@@ -185,11 +185,17 @@ publicRouter.get('/press-releases', async (req, res) => {
         `SELECT title FROM content_translations WHERE content_id = $1 AND content_table = 'press_releases' AND language_code = 'en'`,
         [row.content_id]
       );
+      const imgRes = await pool.query(
+        `SELECT image_url FROM press_release_images WHERE press_release_id = $1 ORDER BY sort_order ASC`,
+        [row.id]
+      );
       return {
         id: row.id,
         publish_date: row.publish_date,
         title: tRes.rows[0]?.title ?? '(untitled)',
         featured: row.featured,
+        images: imgRes.rows.map((r) => r.image_url),
+        video_url: row.video_url,
       };
     })
   );
@@ -199,7 +205,7 @@ publicRouter.get('/press-releases', async (req, res) => {
 
 publicRouter.get('/press-releases/:id', async (req, res) => {
   const { rows } = await pool.query(
-    `SELECT id, publish_date, content_id, featured FROM press_releases WHERE id = $1 AND status = 'published'`,
+    `SELECT id, publish_date, content_id, featured, video_url FROM press_releases WHERE id = $1 AND status = 'published'`,
     [req.params.id]
   );
   const row = rows[0];
@@ -209,6 +215,10 @@ publicRouter.get('/press-releases/:id', async (req, res) => {
     `SELECT title, body FROM content_translations WHERE content_id = $1 AND content_table = 'press_releases' AND language_code = 'en'`,
     [row.content_id]
   );
+  const imgRes = await pool.query(
+    `SELECT image_url FROM press_release_images WHERE press_release_id = $1 ORDER BY sort_order ASC`,
+    [row.id]
+  );
 
   res.json({
     id: row.id,
@@ -216,6 +226,8 @@ publicRouter.get('/press-releases/:id', async (req, res) => {
     featured: row.featured,
     title: tRes.rows[0]?.title ?? '(untitled)',
     body: tRes.rows[0]?.body ?? '',
+    images: imgRes.rows.map((r) => r.image_url),
+    video_url: row.video_url,
   });
 });
 

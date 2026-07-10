@@ -1,14 +1,21 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 
 export function Login() {
-  const { login } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Navigate reactively once `user` actually lands, instead of firing navigate()
+  // right after login() resolves — that races ProtectedRoute's read of `user`
+  // (still null at that point) and bounces back to /login.
+  useEffect(() => {
+    if (user) navigate('/', { replace: true });
+  }, [user, navigate]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -16,7 +23,6 @@ export function Login() {
     setError(null);
     try {
       await login(email, password);
-      navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed.');
     } finally {

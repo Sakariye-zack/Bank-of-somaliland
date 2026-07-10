@@ -6,6 +6,8 @@ import type {
   ContentPageSummary,
   ContentPageDetail,
   LanguageCode,
+  PressRelease,
+  UploadMediaResponse,
 } from '@bos/shared-types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/v1';
@@ -62,6 +64,26 @@ async function tryRefresh(): Promise<boolean> {
   }
 }
 
+async function uploadRequest<T>(path: string, formData: FormData, retry = true): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    body: formData,
+  });
+
+  if (res.status === 401 && retry) {
+    const refreshed = await tryRefresh();
+    if (refreshed) return uploadRequest<T>(path, formData, false);
+  }
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new ApiError(res.status, body?.error?.code || 'UNKNOWN', body?.error?.message || `Upload failed: ${res.status}`);
+  }
+  return res.json();
+}
+
 export const api = {
   login: (email: string, password: string) =>
     request<{ access_token: string; user: AdminUser }>('/auth/login', {
@@ -104,4 +126,20 @@ export const api = {
     id: string,
     payload: { language_code: LanguageCode; title?: string; body?: string; status?: 'draft' | 'published' }
   ) => request(`/admin/content/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+
+  uploadMedia: (images: File[], video: File | null) => {
+    const formData = new FormData();
+    for (const img of images) formData.append('images', img);
+    if (video) formData.append('video', video);
+    return uploadRequest<UploadMediaResponse>('/admin/uploads', formData);
+  },
+  pressReleases: () => request<{ results: PressRelease[] }>('/press-releases?page=1&page_size=50'),
+  createPressRelease: (payload: {
+    title: string;
+    body?: string;
+    publish_date: string;
+    featured?: boolean;
+    images?: string[];
+    video_url?: string | null;
+  }) => request<PressRelease>('/admin/press-releases', { method: 'POST', body: JSON.stringify(payload) }),
 };

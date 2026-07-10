@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { mediaUrl } from '../lib/media';
 import type { PressReleasesResponse } from '@bos/shared-types';
 
 export function Press() {
@@ -37,6 +38,16 @@ export function Press() {
                 {item.publish_date} {item.featured && '· Featured'}
               </div>
               <h4>{item.title}</h4>
+              {(item.images.length > 0 || item.video_url) && (
+                <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                  {item.images.map((img) => (
+                    <img key={img} src={mediaUrl(img)} alt="" className="news-gallery-thumb" />
+                  ))}
+                  {item.video_url && (
+                    <video src={mediaUrl(item.video_url)} className="news-gallery-video" controls />
+                  )}
+                </div>
+              )}
             </article>
           ))}
         </div>
