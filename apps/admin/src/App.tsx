@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Shell } from './components/Shell';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
+import { ContentEditor } from './pages/ContentEditor';
 import { ExchangeRates } from './pages/ExchangeRates';
 import { InstitutionsAdmin } from './pages/InstitutionsAdmin';
 import { Users } from './pages/Users';
@@ -22,6 +23,14 @@ function App() {
           }
         >
           <Route path="/" element={<Dashboard />} />
+          <Route
+            path="/content"
+            element={
+              <ProtectedRoute roles={['super_admin', 'content_editor']}>
+                <ContentEditor />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/exchange-rates"
             element={

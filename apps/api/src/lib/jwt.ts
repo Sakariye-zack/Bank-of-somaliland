@@ -11,11 +11,15 @@ if (!ACCESS_SECRET || !REFRESH_SECRET) {
 }
 
 export function signAccessToken(sub: string, email: string, role: AdminRole): string {
-  return jwt.sign({ sub, email, role }, ACCESS_SECRET, { expiresIn: ACCESS_TTL });
+  return jwt.sign({ sub, email, role }, ACCESS_SECRET, {
+    expiresIn: ACCESS_TTL as jwt.SignOptions['expiresIn'],
+  });
 }
 
 export function signRefreshToken(sub: string, jti: string): string {
-  return jwt.sign({ sub, jti }, REFRESH_SECRET, { expiresIn: REFRESH_TTL });
+  return jwt.sign({ sub, jti }, REFRESH_SECRET, {
+    expiresIn: REFRESH_TTL as jwt.SignOptions['expiresIn'],
+  });
 }
 
 export function verifyAccessToken(token: string): JwtPayload {

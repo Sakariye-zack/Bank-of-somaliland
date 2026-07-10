@@ -3,6 +3,9 @@ import type {
   AuditLogEntry,
   ExchangeRatesLatestResponse,
   InstitutionsResponse,
+  ContentPageSummary,
+  ContentPageDetail,
+  LanguageCode,
 } from '@bos/shared-types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/v1';
@@ -94,4 +97,11 @@ export const api = {
     request('/admin/users', { method: 'POST', body: JSON.stringify(payload) }),
 
   auditLog: (limit = 50) => request<{ results: AuditLogEntry[] }>(`/admin/audit-log?limit=${limit}`),
+
+  contentPages: () => request<{ results: ContentPageSummary[] }>('/admin/content-pages'),
+  contentPage: (id: string) => request<ContentPageDetail>(`/admin/content-pages/${id}`),
+  updateContent: (
+    id: string,
+    payload: { language_code: LanguageCode; title?: string; body?: string; status?: 'draft' | 'published' }
+  ) => request(`/admin/content/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
 };

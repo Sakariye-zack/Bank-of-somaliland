@@ -149,6 +149,51 @@ nav.primary a:hover,
 nav.primary a.active {
   color: #fff;
 }
+nav.primary .nav-dropdown {
+  position: relative;
+}
+nav.primary .nav-dropdown > a {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+nav.primary .caret {
+  font-size: 10px;
+  opacity: 0.7;
+}
+.dd-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+  min-width: 220px;
+  padding: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity 0.18s, transform 0.18s, visibility 0.18s;
+  z-index: 40;
+}
+.nav-dropdown:hover .dd-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.dd-panel a {
+  display: block;
+  color: var(--ink);
+  font-size: 13.5px;
+  padding: 10px 12px;
+  border-radius: 5px;
+  text-decoration: none;
+}
+.dd-panel a:hover {
+  background: var(--parchment-2);
+  color: var(--ink);
+}
 
 .hero {
   background: linear-gradient(180deg, var(--night) 0%, var(--night-2) 100%);

@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import type { ContentResponse } from '@bos/shared-types';
 
-export function About() {
+export function ContentPage({ slug }: { slug: string }) {
   const [content, setContent] = useState<ContentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setContent(null);
+    setError(null);
     api
-      .content('about-the-bank', 'en')
+      .content(slug, 'en')
       .then(setContent)
       .catch((e) => setError(e.message));
-  }, []);
+  }, [slug]);
 
   return (
     <section>

@@ -251,3 +251,77 @@ publicRouter.get('/publications', async (req, res) => {
 
   res.json({ results });
 });
+
+publicRouter.get('/laws-regulations', async (_req, res) => {
+  const { rows } = await pool.query(
+    `SELECT id, title_content_id, file_url, law_number, effective_date FROM laws_regulations ORDER BY effective_date DESC NULLS LAST`
+  );
+
+  const results = await Promise.all(
+    rows.map(async (row) => {
+      const tRes = await pool.query(
+        `SELECT title FROM content_translations WHERE content_id = $1 AND content_table = 'laws_regulations' AND language_code = 'en'`,
+        [row.title_content_id]
+      );
+      return {
+        id: row.id,
+        title: tRes.rows[0]?.title ?? '(untitled)',
+        file_url: row.file_url,
+        law_number: row.law_number,
+        effective_date: row.effective_date,
+      };
+    })
+  );
+
+  res.json({ results });
+});
+
+publicRouter.get('/job-postings', async (req, res) => {
+  const status = req.query.status ? String(req.query.status) : 'open';
+  const { rows } = await pool.query(
+    `SELECT id, title_content_id, department, closing_date, status FROM job_postings WHERE status = $1 ORDER BY closing_date ASC`,
+    [status]
+  );
+
+  const results = await Promise.all(
+    rows.map(async (row) => {
+      const tRes = await pool.query(
+        `SELECT title FROM content_translations WHERE content_id = $1 AND content_table = 'job_postings' AND language_code = 'en'`,
+        [row.title_content_id]
+      );
+      return {
+        id: row.id,
+        title: tRes.rows[0]?.title ?? '(untitled)',
+        department: row.department,
+        closing_date: row.closing_date,
+        status: row.status,
+      };
+    })
+  );
+
+  res.json({ results });
+});
+
+publicRouter.get('/tenders', async (_req, res) => {
+  const { rows } = await pool.query(
+    `SELECT id, title_content_id, reference_number, closing_date, file_url FROM tenders ORDER BY closing_date ASC`
+  );
+
+  const results = await Promise.all(
+    rows.map(async (row) => {
+      const tRes = await pool.query(
+        `SELECT title FROM content_translations WHERE content_id = $1 AND content_table = 'tenders' AND language_code = 'en'`,
+        [row.title_content_id]
+      );
+      return {
+        id: row.id,
+        title: tRes.rows[0]?.title ?? '(untitled)',
+        reference_number: row.reference_number,
+        closing_date: row.closing_date,
+        file_url: row.file_url,
+      };
+    })
+  );
+
+  res.json({ results });
+});

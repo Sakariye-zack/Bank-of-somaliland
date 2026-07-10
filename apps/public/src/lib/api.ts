@@ -4,6 +4,9 @@ import type {
   PressReleasesResponse,
   PublicationsResponse,
   ContentResponse,
+  LawsRegulationsResponse,
+  JobPostingsResponse,
+  TendersResponse,
 } from '@bos/shared-types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/v1';
@@ -43,4 +46,7 @@ export const api = {
   content: (slug: string, lang: string) => get<ContentResponse>(`/content/${slug}?lang=${lang}`),
   submitContact: (payload: { name: string; email: string; subject: string; message: string }) =>
     post<{ status: string }>('/contact', payload),
+  lawsRegulations: () => get<LawsRegulationsResponse>('/laws-regulations'),
+  jobPostings: () => get<JobPostingsResponse>('/job-postings'),
+  tenders: () => get<TendersResponse>('/tenders'),
 };

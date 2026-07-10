@@ -3,6 +3,7 @@ import { useAuth } from '../lib/AuthContext';
 
 const NAV_ITEMS: { to: string; label: string; roles: string[] }[] = [
   { to: '/', label: 'Dashboard', roles: ['super_admin', 'content_editor', 'supervision_data_officer', 'exchange_rate_officer'] },
+  { to: '/content', label: 'Content Editor', roles: ['super_admin', 'content_editor'] },
   { to: '/exchange-rates', label: 'Exchange Rates', roles: ['super_admin', 'exchange_rate_officer'] },
   { to: '/institutions', label: 'Licensed Institutions', roles: ['super_admin', 'supervision_data_officer'] },
   { to: '/users', label: 'Admin Users', roles: ['super_admin'] },

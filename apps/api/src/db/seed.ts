@@ -29,6 +29,18 @@ async function insertContent(
   );
 }
 
+// press_releases / publications / laws_regulations / job_postings have no natural unique
+// key of their own (content_id is generated fresh per insert), so re-running seed would
+// duplicate them. Skip seeding an item if a translation with the same title already exists
+// for that table.
+async function titleAlreadySeeded(contentTable: string, title: string): Promise<boolean> {
+  const { rows } = await pool.query(
+    `SELECT 1 FROM content_translations WHERE content_table = $1 AND title = $2 LIMIT 1`,
+    [contentTable, title]
+  );
+  return rows.length > 0;
+}
+
 async function run() {
   console.log('Seeding admin users (dev password: %s)...', DEV_PASSWORD);
   const superAdminId = await upsertAdmin('Amina Warsame', 'super.admin@bankofsomaliland.so', 'super_admin');
@@ -75,7 +87,7 @@ async function run() {
     await pool.query(
       `INSERT INTO licensed_institutions (name, institution_type, status, license_number, headquarters, license_date, updated_by)
        VALUES ($1, $2, $3, $4, $5, CURRENT_DATE - INTERVAL '2 years', $6)
-       ON CONFLICT DO NOTHING`,
+       ON CONFLICT (license_number) WHERE license_number IS NOT NULL DO NOTHING`,
       [name, institution_type, status, license_number, headquarters, superAdminId]
     );
   }
@@ -87,6 +99,7 @@ async function run() {
     ['Notice: revised licensing fee schedule', 'Effective the next fiscal quarter, the Bank is updating its licensing fee schedule for supervised institutions.', false],
   ];
   for (const [title, body, featured] of pressReleases) {
+    if (await titleAlreadySeeded('press_releases', title)) continue;
     const { rows } = await pool.query(
       `INSERT INTO press_releases (publish_date, content_id, status, featured)
        VALUES (CURRENT_DATE, uuid_generate_v4(), 'published', $1)
@@ -103,6 +116,7 @@ async function run() {
     ['Q2 2026 Financial Stability Report', 'stability_report', 'https://example-spaces.local/stability-report-q2-2026.pdf'],
   ];
   for (const [title, category, file_url] of publications) {
+    if (await titleAlreadySeeded('publications', title)) continue;
     const { rows } = await pool.query(
       `INSERT INTO publications (title_content_id, file_url, category, publish_date)
        VALUES (uuid_generate_v4(), $1, $2, CURRENT_DATE)
@@ -127,6 +141,51 @@ async function run() {
       [slug, page_type, superAdminId]
     );
     await insertContent('content_pages', rows[0].id, title, body);
+  }
+
+  console.log('Seeding laws & regulations...');
+  const laws: [string, string, string, string][] = [
+    ['Central Bank of Somaliland Act', 'https://example-spaces.local/central-bank-act.pdf', '54/2012', '2012-06-01'],
+    ['Anti-Money Laundering Regulation', 'https://example-spaces.local/aml-regulation.pdf', '12/2019', '2019-03-15'],
+    ['Licensed Institutions Supervision Directive', 'https://example-spaces.local/supervision-directive.pdf', '07/2023', '2023-01-10'],
+  ];
+  for (const [title, file_url, law_number, effective_date] of laws) {
+    if (await titleAlreadySeeded('laws_regulations', title)) continue;
+    const { rows } = await pool.query(
+      `INSERT INTO laws_regulations (title_content_id, file_url, law_number, effective_date)
+       VALUES (uuid_generate_v4(), $1, $2, $3) RETURNING title_content_id`,
+      [file_url, law_number, effective_date]
+    );
+    await insertContent('laws_regulations', rows[0].title_content_id, title, '');
+  }
+
+  console.log('Seeding job postings...');
+  const jobs: [string, string, string][] = [
+    ['Senior Bank Examiner', 'Bank Supervision Department', '2026-08-15'],
+    ['Currency Operations Officer', 'Currency Department', '2026-08-01'],
+  ];
+  for (const [title, department, closing_date] of jobs) {
+    if (await titleAlreadySeeded('job_postings', title)) continue;
+    const { rows } = await pool.query(
+      `INSERT INTO job_postings (title_content_id, department, closing_date)
+       VALUES (uuid_generate_v4(), $1, $2) RETURNING title_content_id`,
+      [department, closing_date]
+    );
+    await insertContent('job_postings', rows[0].title_content_id, title, '');
+  }
+
+  console.log('Seeding tenders...');
+  const tenders: [string, string, string, string][] = [
+    ['Supply of IT Infrastructure Equipment', 'BOS-TND-2026-014', '2026-08-20', 'https://example-spaces.local/tender-2026-014.pdf'],
+  ];
+  for (const [title, reference_number, closing_date, file_url] of tenders) {
+    const { rows } = await pool.query(
+      `INSERT INTO tenders (title_content_id, reference_number, closing_date, file_url)
+       VALUES (uuid_generate_v4(), $1, $2, $3)
+       ON CONFLICT (reference_number) DO NOTHING RETURNING title_content_id`,
+      [reference_number, closing_date, file_url]
+    );
+    if (rows[0]) await insertContent('tenders', rows[0].title_content_id, title, '');
   }
 
   console.log('Seed complete.');

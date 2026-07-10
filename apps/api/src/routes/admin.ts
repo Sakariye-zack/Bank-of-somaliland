@@ -10,6 +10,26 @@ export const adminRouter = Router();
 // ---------------------------------------------------------------------------
 // Content editing — content_editor, super_admin
 // ---------------------------------------------------------------------------
+adminRouter.get('/content-pages', requireRole('content_editor', 'super_admin'), async (_req, res) => {
+  const { rows } = await pool.query(
+    `SELECT id, slug, page_type, status, updated_at FROM content_pages ORDER BY page_type, slug`
+  );
+  res.json({ results: rows });
+});
+
+adminRouter.get('/content-pages/:id', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const pageRes = await pool.query('SELECT * FROM content_pages WHERE id = $1', [req.params.id]);
+  const page = pageRes.rows[0];
+  if (!page) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Content page not found.' } });
+
+  const tRes = await pool.query(
+    `SELECT language_code, title, body FROM content_translations WHERE content_id = $1 AND content_table = 'content_pages'`,
+    [page.id]
+  );
+
+  res.json({ ...page, translations: tRes.rows });
+});
+
 const contentUpdateSchema = z.object({
   language_code: z.enum(['en', 'so', 'ar']),
   title: z.string().max(300).optional(),
@@ -221,6 +241,150 @@ adminRouter.post('/institutions', requireRole('supervision_data_officer', 'super
   });
 
   res.status(201).json(rows[0]);
+});
+
+// ---------------------------------------------------------------------------
+// Laws & Regulations, Job Postings, Tenders — content_editor, super_admin
+// (same content-management role band as press_releases/publications per
+// Database_API_Auth_Specification.md Section 3.3)
+// ---------------------------------------------------------------------------
+const lawSchema = z.object({
+  title: z.string().min(1).max(300),
+  file_url: z.string().url().max(500),
+  law_number: z.string().max(50).optional(),
+  effective_date: z.string().optional(),
+});
+
+adminRouter.post('/laws-regulations', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const parsed = lawSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Invalid law/regulation payload.' } });
+  }
+  const { title, file_url, law_number, effective_date } = parsed.data;
+
+  const { rows } = await pool.query(
+    `INSERT INTO laws_regulations (title_content_id, file_url, law_number, effective_date)
+     VALUES (uuid_generate_v4(), $1, $2, $3) RETURNING *`,
+    [file_url, law_number ?? null, effective_date ?? null]
+  );
+  await pool.query(
+    `INSERT INTO content_translations (content_id, content_table, language_code, title)
+     VALUES ($1, 'laws_regulations', 'en', $2)`,
+    [rows[0].title_content_id, title]
+  );
+
+  await writeAuditLog(req, {
+    action: 'create',
+    table_name: 'laws_regulations',
+    record_id: rows[0].id,
+    before_value: null,
+    after_value: { ...rows[0], title },
+  });
+
+  res.status(201).json({ ...rows[0], title });
+});
+
+const jobSchema = z.object({
+  title: z.string().min(1).max(300),
+  department: z.string().max(150).optional(),
+  closing_date: z.string(),
+});
+
+adminRouter.post('/job-postings', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const parsed = jobSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Invalid job posting payload.' } });
+  }
+  const { title, department, closing_date } = parsed.data;
+
+  const { rows } = await pool.query(
+    `INSERT INTO job_postings (title_content_id, department, closing_date)
+     VALUES (uuid_generate_v4(), $1, $2) RETURNING *`,
+    [department ?? null, closing_date]
+  );
+  await pool.query(
+    `INSERT INTO content_translations (content_id, content_table, language_code, title)
+     VALUES ($1, 'job_postings', 'en', $2)`,
+    [rows[0].title_content_id, title]
+  );
+
+  await writeAuditLog(req, {
+    action: 'create',
+    table_name: 'job_postings',
+    record_id: rows[0].id,
+    before_value: null,
+    after_value: { ...rows[0], title },
+  });
+
+  res.status(201).json({ ...rows[0], title });
+});
+
+adminRouter.put('/job-postings/:id', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const schema = z.object({ status: z.enum(['open', 'closed']) });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'status is required.' } });
+  }
+
+  const beforeRes = await pool.query('SELECT * FROM job_postings WHERE id = $1', [req.params.id]);
+  const before = beforeRes.rows[0];
+  if (!before) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Job posting not found.' } });
+
+  const { rows } = await pool.query('UPDATE job_postings SET status = $1 WHERE id = $2 RETURNING *', [
+    parsed.data.status,
+    req.params.id,
+  ]);
+
+  await writeAuditLog(req, {
+    action: 'update',
+    table_name: 'job_postings',
+    record_id: rows[0].id,
+    before_value: before,
+    after_value: rows[0],
+  });
+
+  res.json(rows[0]);
+});
+
+const tenderSchema = z.object({
+  title: z.string().min(1).max(300),
+  reference_number: z.string().min(1).max(50),
+  closing_date: z.string(),
+  file_url: z.string().url().max(500).optional(),
+});
+
+adminRouter.post('/tenders', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const parsed = tenderSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Invalid tender payload.' } });
+  }
+  const { title, reference_number, closing_date, file_url } = parsed.data;
+
+  const existing = await pool.query('SELECT id FROM tenders WHERE reference_number = $1', [reference_number]);
+  if (existing.rows.length > 0) {
+    return res.status(409).json({ error: { code: 'CONFLICT', message: 'A tender with this reference number already exists.' } });
+  }
+
+  const { rows } = await pool.query(
+    `INSERT INTO tenders (title_content_id, reference_number, closing_date, file_url)
+     VALUES (uuid_generate_v4(), $1, $2, $3) RETURNING *`,
+    [reference_number, closing_date, file_url ?? null]
+  );
+  await pool.query(
+    `INSERT INTO content_translations (content_id, content_table, language_code, title)
+     VALUES ($1, 'tenders', 'en', $2)`,
+    [rows[0].title_content_id, title]
+  );
+
+  await writeAuditLog(req, {
+    action: 'create',
+    table_name: 'tenders',
+    record_id: rows[0].id,
+    before_value: null,
+    after_value: { ...rows[0], title },
+  });
+
+  res.status(201).json({ ...rows[0], title });
 });
 
 // ---------------------------------------------------------------------------

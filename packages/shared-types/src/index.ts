@@ -120,6 +120,62 @@ export interface PublicationsResponse {
   results: Publication[];
 }
 
+export interface LawRegulation {
+  id: string;
+  title: string;
+  file_url: string;
+  law_number: string | null;
+  effective_date: string | null;
+}
+
+export interface LawsRegulationsResponse {
+  results: LawRegulation[];
+}
+
+export type JobStatus = 'open' | 'closed';
+
+export interface JobPosting {
+  id: string;
+  title: string;
+  department: string | null;
+  closing_date: string;
+  status: JobStatus;
+}
+
+export interface JobPostingsResponse {
+  results: JobPosting[];
+}
+
+export interface Tender {
+  id: string;
+  title: string;
+  reference_number: string;
+  closing_date: string;
+  file_url: string | null;
+}
+
+export interface TendersResponse {
+  results: Tender[];
+}
+
+export interface ContentPageSummary {
+  id: string;
+  slug: string;
+  page_type: string;
+  status: 'draft' | 'published';
+  updated_at: string;
+}
+
+export interface ContentPageTranslation {
+  language_code: LanguageCode;
+  title: string | null;
+  body: string | null;
+}
+
+export interface ContentPageDetail extends ContentPageSummary {
+  translations: ContentPageTranslation[];
+}
+
 export interface AuditLogEntry {
   id: number;
   admin_user_id: string;

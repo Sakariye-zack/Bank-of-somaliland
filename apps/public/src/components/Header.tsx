@@ -1,11 +1,16 @@
 import { Link, NavLink } from 'react-router-dom';
 
-const NAV_LINKS = [
-  { to: '/institutions', label: 'Licensed Institutions' },
-  { to: '/publications', label: 'Publications & Laws' },
-  { to: '/press', label: 'Press Releases' },
+const ABOUT_LINKS = [
   { to: '/about', label: 'About the Bank' },
-  { to: '/contact', label: 'Contact' },
+  { to: '/governance', label: 'Governance' },
+  { to: '/core-functions', label: 'Core Functions' },
+];
+
+const RESOURCE_LINKS = [
+  { to: '/publications', label: 'Publications' },
+  { to: '/laws', label: 'Laws & Regulations' },
+  { to: '/press', label: 'Press Releases' },
+  { to: '/careers', label: 'Careers & Tenders' },
 ];
 
 export function Header() {
@@ -39,11 +44,36 @@ export function Header() {
             </div>
           </Link>
           <nav className="primary">
-            {NAV_LINKS.map((link) => (
-              <NavLink key={link.to} to={link.to} className={({ isActive }) => (isActive ? 'active' : '')}>
-                {link.label}
-              </NavLink>
-            ))}
+            <div className="nav-dropdown">
+              <a>
+                About <span className="caret">▾</span>
+              </a>
+              <div className="dd-panel">
+                {ABOUT_LINKS.map((link) => (
+                  <Link key={link.to} to={link.to}>
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <NavLink to="/institutions" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Licensed Institutions
+            </NavLink>
+            <div className="nav-dropdown">
+              <a>
+                Resources <span className="caret">▾</span>
+              </a>
+              <div className="dd-panel">
+                {RESOURCE_LINKS.map((link) => (
+                  <Link key={link.to} to={link.to}>
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <NavLink to="/contact" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Contact
+            </NavLink>
           </nav>
         </div>
       </header>
