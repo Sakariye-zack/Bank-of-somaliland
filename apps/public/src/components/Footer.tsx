@@ -1,0 +1,12 @@
+export function Footer() {
+  return (
+    <footer className="site">
+      <div className="wrap">
+        <p style={{ margin: 0 }}>© {new Date().getFullYear()} Bank of Somaliland. All rights reserved.</p>
+        <p style={{ marginTop: 8, opacity: 0.8 }}>
+          Official exchange rates and licensed institution data are published by the Bank of Somaliland only.
+        </p>
+      </div>
+    </footer>
+  );
+}

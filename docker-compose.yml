@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bos_app
+      POSTGRES_PASSWORD: bos_dev_password
+      POSTGRES_DB: bank_of_somaliland
+    ports:
+      - "5432:5432"
+    volumes:
+      - bos_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bos_app -d bank_of_somaliland"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  bos_db_data:

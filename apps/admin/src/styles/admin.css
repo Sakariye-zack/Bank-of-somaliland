@@ -1,0 +1,221 @@
+:root {
+  --ink: #1b1812;
+  --night: #0b4a2a;
+  --night-2: #073420;
+  --parchment: #faf7ee;
+  --parchment-2: #f0ead6;
+  --gold: #d9971d;
+  --gold-dark: #b67a12;
+  --teal: #1e7a45;
+  --bronze: #a9791d;
+  --danger: #b23a3a;
+  --line: rgba(169, 121, 29, 0.35);
+  --font-display: 'Spectral', serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--parchment-2);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+a {
+  color: inherit;
+}
+
+.admin-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+.admin-sidebar {
+  background: var(--night);
+  color: #f4efe2;
+  padding: 24px 16px;
+}
+.admin-sidebar .brand {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.admin-sidebar .role-tag {
+  font-size: 11px;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 24px;
+}
+.admin-sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.admin-sidebar nav a {
+  padding: 10px 12px;
+  border-radius: 5px;
+  text-decoration: none;
+  font-size: 14px;
+  color: #d8e4dc;
+}
+.admin-sidebar nav a:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+.admin-sidebar nav a.active {
+  background: var(--gold);
+  color: var(--night);
+  font-weight: 600;
+}
+.admin-sidebar .logout {
+  margin-top: 24px;
+  background: none;
+  border: 1px solid rgba(244, 239, 226, 0.3);
+  color: #f4efe2;
+  padding: 9px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  width: 100%;
+}
+
+.admin-main {
+  padding: 32px 40px;
+}
+.admin-main h1 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  margin: 0 0 24px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+table.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+table.admin-table th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--bronze);
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--line);
+}
+table.admin-table td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(169, 121, 29, 0.18);
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.form-row label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--bronze);
+}
+.form-row input,
+.form-row select,
+.form-row textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  background: var(--parchment);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+.btn-primary {
+  background: var(--gold);
+  color: var(--night);
+}
+.btn-primary:hover {
+  background: var(--gold-dark);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.status-pill {
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.status-active {
+  background: rgba(30, 122, 69, 0.15);
+  color: var(--teal);
+}
+.status-revoked {
+  background: rgba(178, 58, 58, 0.12);
+  color: var(--danger);
+}
+
+.status-error {
+  color: var(--danger);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.status-ok {
+  color: var(--teal);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.login-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, var(--night) 0%, var(--night-2) 100%);
+}
+.login-card {
+  background: var(--parchment);
+  border-radius: 8px;
+  padding: 36px 32px;
+  width: 360px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+.login-card h1 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin: 0 0 4px;
+}
+.login-card .sub {
+  font-size: 13px;
+  color: var(--bronze);
+  margin-bottom: 24px;
+}
