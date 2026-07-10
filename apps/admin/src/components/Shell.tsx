@@ -22,7 +22,10 @@ export function Shell() {
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
-        <div className="brand">Bank of Somaliland</div>
+        <div className="sidebar-brand-row">
+          <img className="sidebar-logo" src="/logo.jpg" alt="Bank of Somaliland emblem" />
+          <div className="brand">Bank of Somaliland</div>
+        </div>
         <div className="role-tag">{user?.role.replace(/_/g, ' ')}</div>
         <nav>
           {NAV_ITEMS.filter((item) => !user || item.roles.includes(user.role)).map((item) => (

@@ -122,6 +122,15 @@ header.site {
   font-size: 20px;
   color: var(--night);
 }
+.brand-mark-img {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 50%;
+  padding: 2px;
+  flex-shrink: 0;
+}
 .brand-text .t1 {
   font-family: var(--font-display);
   font-size: 19px;

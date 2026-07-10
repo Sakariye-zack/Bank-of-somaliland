@@ -37,7 +37,7 @@ export function Header() {
       <header className="site">
         <div className="wrap nav-row">
           <Link className="brand" to="/">
-            <div className="brand-mark">BS</div>
+            <img className="brand-mark-img" src="/logo.jpg" alt="Bank of Somaliland emblem" />
             <div className="brand-text">
               <div className="t1">Bank of Somaliland</div>
               <div className="t2">Central Monetary Authority</div>

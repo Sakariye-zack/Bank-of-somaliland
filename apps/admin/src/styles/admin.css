@@ -38,11 +38,25 @@ a {
   color: #f4efe2;
   padding: 24px 16px;
 }
+.sidebar-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.sidebar-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
 .admin-sidebar .brand {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  margin-bottom: 4px;
+  line-height: 1.2;
 }
 .admin-sidebar .role-tag {
   font-size: 11px;
@@ -209,13 +223,22 @@ table.admin-table td {
   width: 360px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
 }
+.login-logo {
+  display: block;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  margin: 0 auto 16px;
+}
 .login-card h1 {
   font-family: var(--font-display);
   font-size: 22px;
   margin: 0 0 4px;
+  text-align: center;
 }
 .login-card .sub {
   font-size: 13px;
   color: var(--bronze);
   margin-bottom: 24px;
+  text-align: center;
 }

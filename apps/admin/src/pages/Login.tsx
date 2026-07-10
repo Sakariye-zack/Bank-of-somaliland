@@ -27,6 +27,7 @@ export function Login() {
   return (
     <div className="login-shell">
       <div className="login-card">
+        <img src="/logo.jpg" alt="Bank of Somaliland emblem" className="login-logo" />
         <h1>Bank of Somaliland</h1>
         <div className="sub">Admin Panel</div>
         {error && <div className="status-error">{error}</div>}
