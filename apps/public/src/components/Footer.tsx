@@ -1,41 +1,41 @@
 import { Link } from 'react-router-dom';
-
-const QUICK_LINKS = [
-  { to: '/about', label: 'About the Bank' },
-  { to: '/governance', label: 'Governance' },
-  { to: '/core-functions', label: 'Core Functions' },
-  { to: '/institutions', label: 'Licensed Institutions' },
-];
-
-const RESOURCE_LINKS = [
-  { to: '/publications', label: 'Publications' },
-  { to: '/laws', label: 'Laws & Regulations' },
-  { to: '/press', label: 'Press Releases' },
-  { to: '/careers', label: 'Careers & Tenders' },
-];
+import { useT } from '../lib/i18n';
 
 export function Footer() {
+  const t = useT();
+
+  const ABOUT_LINKS = [
+    { to: '/about', label: t('navAboutTheBank') },
+    { to: '/governance', label: t('navGovernance') },
+    { to: '/core-functions', label: t('navCoreFunctions') },
+    { to: '/institutions', label: t('navLicensedInstitutions') },
+  ];
+
+  const RESOURCE_LINKS = [
+    { to: '/publications', label: t('navPublications') },
+    { to: '/laws', label: t('navLawsRegulations') },
+    { to: '/press', label: t('navPressReleases') },
+    { to: '/careers', label: t('navCareersTenders') },
+  ];
+
   return (
     <footer className="site">
       <div className="wrap footer-grid">
         <div className="footer-brand">
           <div className="footer-brand-row">
-            <img src="/logo.jpg" alt="Bank of Somaliland emblem" className="footer-logo" />
+            <img src="/logo.jpg" alt={t('bankEmblem')} className="footer-logo" />
             <div>
-              <div className="footer-brand-name">Bank of Somaliland</div>
-              <div className="footer-brand-sub">Central Monetary Authority</div>
+              <div className="footer-brand-name">{t('bankName')}</div>
+              <div className="footer-brand-sub">{t('centralMonetaryAuthority')}</div>
             </div>
           </div>
-          <p className="footer-blurb">
-            The official monetary authority of the Republic of Somaliland — responsible for currency issuance,
-            financial sector supervision, and monetary policy. Hargeisa, Somaliland.
-          </p>
+          <p className="footer-blurb">{t('footerBlurb')}</p>
         </div>
 
         <div className="footer-col">
-          <h5>About</h5>
+          <h5>{t('footerAbout')}</h5>
           <ul>
-            {QUICK_LINKS.map((link) => (
+            {ABOUT_LINKS.map((link) => (
               <li key={link.to}>
                 <Link to={link.to}>{link.label}</Link>
               </li>
@@ -44,7 +44,7 @@ export function Footer() {
         </div>
 
         <div className="footer-col">
-          <h5>Resources</h5>
+          <h5>{t('footerResources')}</h5>
           <ul>
             {RESOURCE_LINKS.map((link) => (
               <li key={link.to}>
@@ -55,24 +55,21 @@ export function Footer() {
         </div>
 
         <div className="footer-col">
-          <h5>Stay Informed</h5>
-          <p className="footer-note">
-            Official exchange rates and licensed institution status are published exclusively on this site —
-            treat any other source as unverified.
-          </p>
+          <h5>{t('footerStayInformed')}</h5>
+          <p className="footer-note">{t('footerNote')}</p>
           <Link className="footer-cta" to="/press">
-            Read the latest announcements →
+            {t('footerReadAnnouncements')}
           </Link>
           <Link className="footer-cta" to="/contact">
-            Contact the Bank →
+            {t('footerContact')}
           </Link>
         </div>
       </div>
 
       <div className="footer-bottom">
         <div className="wrap footer-bottom-row">
-          <p>© {new Date().getFullYear()} Bank of Somaliland. All rights reserved.</p>
-          <p className="footer-bottom-note">The Bank of Somaliland is the sole regulator of licensed financial institutions in Somaliland.</p>
+          <p>{t('footerRights', new Date().getFullYear())}</p>
+          <p className="footer-bottom-note">{t('footerBottomNote')}</p>
         </div>
       </div>
     </footer>

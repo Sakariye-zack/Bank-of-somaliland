@@ -45,7 +45,12 @@ adminRouter.post('/uploads', requireRole('content_editor', 'super_admin'), (req,
 // ---------------------------------------------------------------------------
 adminRouter.get('/content-pages', requireRole('content_editor', 'super_admin'), async (_req, res) => {
   const { rows } = await pool.query(
-    `SELECT id, slug, page_type, status, updated_at FROM content_pages ORDER BY page_type, slug`
+    `SELECT cp.id, cp.slug, cp.page_type, cp.status, cp.updated_at,
+            array_remove(array_agg(DISTINCT ct.language_code), NULL) AS languages
+     FROM content_pages cp
+     LEFT JOIN content_translations ct ON ct.content_id = cp.id AND ct.content_table = 'content_pages'
+     GROUP BY cp.id
+     ORDER BY cp.page_type, cp.slug`
   );
   res.json({ results: rows });
 });
@@ -611,6 +616,7 @@ adminRouter.get('/nav-items', requireRole('content_editor', 'super_admin'), asyn
 
 const navItemSchema = z.object({
   label: z.string().min(1).max(100),
+  label_so: z.string().max(100).optional(),
   path: z.string().min(1).max(300),
   parent_id: z.string().uuid().nullable().optional(),
   sort_order: z.number().int().optional(),
@@ -621,12 +627,12 @@ adminRouter.post('/nav-items', requireRole('content_editor', 'super_admin'), asy
   if (!parsed.success) {
     return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Invalid navigation item payload.' } });
   }
-  const { label, path, parent_id, sort_order } = parsed.data;
+  const { label, label_so, path, parent_id, sort_order } = parsed.data;
 
   const { rows } = await pool.query(
-    `INSERT INTO nav_items (label, path, parent_id, sort_order, updated_by)
-     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-    [label, path, parent_id ?? null, sort_order ?? 0, req.user!.sub]
+    `INSERT INTO nav_items (label, label_so, path, parent_id, sort_order, updated_by)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+    [label, label_so ?? null, path, parent_id ?? null, sort_order ?? 0, req.user!.sub]
   );
 
   await writeAuditLog(req, {
@@ -642,6 +648,7 @@ adminRouter.post('/nav-items', requireRole('content_editor', 'super_admin'), asy
 
 const navItemUpdateSchema = z.object({
   label: z.string().min(1).max(100).optional(),
+  label_so: z.string().max(100).nullable().optional(),
   path: z.string().min(1).max(300).optional(),
   parent_id: z.string().uuid().nullable().optional(),
   sort_order: z.number().int().optional(),

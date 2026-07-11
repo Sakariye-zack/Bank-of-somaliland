@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { mediaUrl } from '../lib/media';
+import { useT } from '../lib/i18n';
 import type { PressRelease } from '@bos/shared-types';
 
 const AUTO_ADVANCE_MS = 6000;
 
 export function NewsSlider({ items }: { items: PressRelease[] }) {
+  const t = useT();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -35,7 +37,7 @@ export function NewsSlider({ items }: { items: PressRelease[] }) {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       aria-roledescription="carousel"
-      aria-label="Latest news"
+      aria-label={t('sliderEyebrow')}
     >
       <div className="news-slider-track" style={{ transform: `translateX(-${active * 100}%)` }}>
         {items.map((item, i) => (
@@ -47,11 +49,11 @@ export function NewsSlider({ items }: { items: PressRelease[] }) {
             )}
             <div className="news-slide-scrim" />
             <div className="news-slide-content">
-              <div className="news-slide-eyebrow">Latest from the Bank</div>
+              <div className="news-slide-eyebrow">{t('sliderEyebrow')}</div>
               <h2 className="news-slide-title">{item.title}</h2>
               <div className="news-slide-date">{item.publish_date}</div>
               <Link className="btn btn-primary" to="/press">
-                Read the full announcement →
+                {t('sliderCta')}
               </Link>
             </div>
           </div>
@@ -60,10 +62,10 @@ export function NewsSlider({ items }: { items: PressRelease[] }) {
 
       {items.length > 1 && (
         <>
-          <button className="news-slider-arrow prev" type="button" aria-label="Previous" onClick={() => goTo(active - 1)}>
+          <button className="news-slider-arrow prev" type="button" aria-label={t('previous')} onClick={() => goTo(active - 1)}>
             ‹
           </button>
-          <button className="news-slider-arrow next" type="button" aria-label="Next" onClick={() => goTo(active + 1)}>
+          <button className="news-slider-arrow next" type="button" aria-label={t('next')} onClick={() => goTo(active + 1)}>
             ›
           </button>
           <div className="news-slider-dots">

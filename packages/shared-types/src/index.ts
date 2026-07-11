@@ -99,6 +99,8 @@ export interface PressRelease {
   body?: string;
   images: string[];
   video_url: string | null;
+  language_served?: LanguageCode;
+  fallback_used?: boolean;
 }
 
 export interface PressReleasesResponse {
@@ -122,6 +124,7 @@ export interface Publication {
   category: PublicationCategory;
   file_url: string;
   publish_date: string;
+  fallback_used?: boolean;
 }
 
 export interface PublicationsResponse {
@@ -134,6 +137,7 @@ export interface LawRegulation {
   file_url: string;
   law_number: string | null;
   effective_date: string | null;
+  fallback_used?: boolean;
 }
 
 export interface LawsRegulationsResponse {
@@ -148,6 +152,7 @@ export interface JobPosting {
   department: string | null;
   closing_date: string;
   status: JobStatus;
+  fallback_used?: boolean;
 }
 
 export interface JobPostingsResponse {
@@ -160,6 +165,7 @@ export interface Tender {
   reference_number: string;
   closing_date: string;
   file_url: string | null;
+  fallback_used?: boolean;
 }
 
 export interface TendersResponse {
@@ -172,6 +178,7 @@ export interface ContentPageSummary {
   page_type: string;
   status: 'draft' | 'published';
   updated_at: string;
+  languages: LanguageCode[];
 }
 
 export interface ContentPageTranslation {
@@ -201,6 +208,7 @@ export interface AuditLogEntry {
 export interface NavItem {
   id: string;
   label: string;
+  label_so?: string | null;
   path: string;
   parent_id: string | null;
   sort_order: number;

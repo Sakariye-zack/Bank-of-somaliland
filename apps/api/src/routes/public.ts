@@ -5,6 +5,47 @@ import type { LanguageCode } from '@bos/shared-types';
 
 export const publicRouter = Router();
 
+const LANGS: LanguageCode[] = ['en', 'so', 'ar'];
+
+function parseLang(value: unknown): LanguageCode {
+  return LANGS.includes(value as LanguageCode) ? (value as LanguageCode) : 'en';
+}
+
+interface Translation {
+  title: string | null;
+  body: string | null;
+  language_served: LanguageCode;
+  fallback_used: boolean;
+}
+
+// Looks up a translation for the requested language, falling back to English
+// (with fallback_used: true) when the requested language isn't available yet —
+// the same contract as GET /content/:slug, generalized to every content type
+// that hangs off the polymorphic content_translations table.
+async function getTranslation(contentId: string, table: string, requested: LanguageCode): Promise<Translation> {
+  let served = requested;
+  let fallbackUsed = false;
+  let res = await pool.query(
+    `SELECT title, body FROM content_translations WHERE content_id = $1 AND content_table = $2 AND language_code = $3`,
+    [contentId, table, requested]
+  );
+  if (res.rows.length === 0 && requested !== 'en') {
+    served = 'en';
+    fallbackUsed = true;
+    res = await pool.query(
+      `SELECT title, body FROM content_translations WHERE content_id = $1 AND content_table = $2 AND language_code = 'en'`,
+      [contentId, table]
+    );
+  }
+  const row = res.rows[0];
+  return {
+    title: row?.title ?? null,
+    body: row?.body ?? null,
+    language_served: served,
+    fallback_used: fallbackUsed,
+  };
+}
+
 const contactSchema = z.object({
   name: z.string().trim().min(1).max(150),
   email: z.string().trim().email().max(255),
@@ -31,11 +72,9 @@ publicRouter.post('/contact', async (req, res) => {
   res.status(201).json({ status: 'received' });
 });
 
-const LANGS: LanguageCode[] = ['en', 'so', 'ar'];
-
 publicRouter.get('/content/:slug', async (req, res) => {
   const { slug } = req.params;
-  const requested = LANGS.includes(req.query.lang as LanguageCode) ? (req.query.lang as LanguageCode) : 'en';
+  const requested = parseLang(req.query.lang);
 
   const pageRes = await pool.query(
     `SELECT id, slug, page_type, status, updated_at FROM content_pages WHERE slug = $1 AND status = 'published'`,
@@ -46,31 +85,17 @@ publicRouter.get('/content/:slug', async (req, res) => {
     return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Page not found.' } });
   }
 
-  let served: LanguageCode = requested;
-  let fallbackUsed = false;
-  let tRes = await pool.query(
-    `SELECT title, body FROM content_translations WHERE content_id = $1 AND content_table = 'content_pages' AND language_code = $2`,
-    [page.id, requested]
-  );
-  if (tRes.rows.length === 0 && requested !== 'en') {
-    served = 'en';
-    fallbackUsed = true;
-    tRes = await pool.query(
-      `SELECT title, body FROM content_translations WHERE content_id = $1 AND content_table = 'content_pages' AND language_code = 'en'`,
-      [page.id]
-    );
-  }
-  const translation = tRes.rows[0] ?? { title: null, body: null };
+  const t = await getTranslation(page.id, 'content_pages', requested);
 
   res.json({
     slug: page.slug,
     page_type: page.page_type,
     status: page.status,
     language_requested: requested,
-    language_served: served,
-    fallback_used: fallbackUsed,
-    title: translation.title,
-    body: translation.body,
+    language_served: t.language_served,
+    fallback_used: t.fallback_used,
+    title: t.title,
+    body: t.body,
     updated_at: page.updated_at,
   });
 });
@@ -168,6 +193,7 @@ publicRouter.get('/press-releases', async (req, res) => {
   const page = Math.max(1, parseInt(String(req.query.page ?? '1'), 10) || 1);
   const pageSize = Math.min(50, Math.max(1, parseInt(String(req.query.page_size ?? '10'), 10) || 10));
   const offset = (page - 1) * pageSize;
+  const lang = parseLang(req.query.lang);
 
   const totalRes = await pool.query(`SELECT COUNT(*)::int AS total FROM press_releases WHERE status = 'published'`);
   const { rows } = await pool.query(
@@ -181,10 +207,7 @@ publicRouter.get('/press-releases', async (req, res) => {
 
   const results = await Promise.all(
     rows.map(async (row) => {
-      const tRes = await pool.query(
-        `SELECT title FROM content_translations WHERE content_id = $1 AND content_table = 'press_releases' AND language_code = 'en'`,
-        [row.content_id]
-      );
+      const t = await getTranslation(row.content_id, 'press_releases', lang);
       const imgRes = await pool.query(
         `SELECT image_url FROM press_release_images WHERE press_release_id = $1 ORDER BY sort_order ASC`,
         [row.id]
@@ -192,10 +215,12 @@ publicRouter.get('/press-releases', async (req, res) => {
       return {
         id: row.id,
         publish_date: row.publish_date,
-        title: tRes.rows[0]?.title ?? '(untitled)',
+        title: t.title ?? '(untitled)',
         featured: row.featured,
         images: imgRes.rows.map((r) => r.image_url),
         video_url: row.video_url,
+        language_served: t.language_served,
+        fallback_used: t.fallback_used,
       };
     })
   );
@@ -204,6 +229,7 @@ publicRouter.get('/press-releases', async (req, res) => {
 });
 
 publicRouter.get('/press-releases/:id', async (req, res) => {
+  const lang = parseLang(req.query.lang);
   const { rows } = await pool.query(
     `SELECT id, publish_date, content_id, featured, video_url FROM press_releases WHERE id = $1 AND status = 'published'`,
     [req.params.id]
@@ -211,10 +237,7 @@ publicRouter.get('/press-releases/:id', async (req, res) => {
   const row = rows[0];
   if (!row) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Press release not found.' } });
 
-  const tRes = await pool.query(
-    `SELECT title, body FROM content_translations WHERE content_id = $1 AND content_table = 'press_releases' AND language_code = 'en'`,
-    [row.content_id]
-  );
+  const t = await getTranslation(row.content_id, 'press_releases', lang);
   const imgRes = await pool.query(
     `SELECT image_url FROM press_release_images WHERE press_release_id = $1 ORDER BY sort_order ASC`,
     [row.id]
@@ -224,15 +247,18 @@ publicRouter.get('/press-releases/:id', async (req, res) => {
     id: row.id,
     publish_date: row.publish_date,
     featured: row.featured,
-    title: tRes.rows[0]?.title ?? '(untitled)',
-    body: tRes.rows[0]?.body ?? '',
+    title: t.title ?? '(untitled)',
+    body: t.body ?? '',
     images: imgRes.rows.map((r) => r.image_url),
     video_url: row.video_url,
+    language_served: t.language_served,
+    fallback_used: t.fallback_used,
   });
 });
 
 publicRouter.get('/publications', async (req, res) => {
   const category = req.query.category ? String(req.query.category) : null;
+  const lang = parseLang(req.query.lang);
   const params: unknown[] = [];
   let where = '';
   if (category) {
@@ -247,16 +273,14 @@ publicRouter.get('/publications', async (req, res) => {
 
   const results = await Promise.all(
     rows.map(async (row) => {
-      const tRes = await pool.query(
-        `SELECT title FROM content_translations WHERE content_id = $1 AND content_table = 'publications' AND language_code = 'en'`,
-        [row.title_content_id]
-      );
+      const t = await getTranslation(row.title_content_id, 'publications', lang);
       return {
         id: row.id,
-        title: tRes.rows[0]?.title ?? '(untitled)',
+        title: t.title ?? '(untitled)',
         category: row.category,
         file_url: row.file_url,
         publish_date: row.publish_date,
+        fallback_used: t.fallback_used,
       };
     })
   );
@@ -264,23 +288,22 @@ publicRouter.get('/publications', async (req, res) => {
   res.json({ results });
 });
 
-publicRouter.get('/laws-regulations', async (_req, res) => {
+publicRouter.get('/laws-regulations', async (req, res) => {
+  const lang = parseLang(req.query.lang);
   const { rows } = await pool.query(
     `SELECT id, title_content_id, file_url, law_number, effective_date FROM laws_regulations ORDER BY effective_date DESC NULLS LAST`
   );
 
   const results = await Promise.all(
     rows.map(async (row) => {
-      const tRes = await pool.query(
-        `SELECT title FROM content_translations WHERE content_id = $1 AND content_table = 'laws_regulations' AND language_code = 'en'`,
-        [row.title_content_id]
-      );
+      const t = await getTranslation(row.title_content_id, 'laws_regulations', lang);
       return {
         id: row.id,
-        title: tRes.rows[0]?.title ?? '(untitled)',
+        title: t.title ?? '(untitled)',
         file_url: row.file_url,
         law_number: row.law_number,
         effective_date: row.effective_date,
+        fallback_used: t.fallback_used,
       };
     })
   );
@@ -290,6 +313,7 @@ publicRouter.get('/laws-regulations', async (_req, res) => {
 
 publicRouter.get('/job-postings', async (req, res) => {
   const status = req.query.status ? String(req.query.status) : 'open';
+  const lang = parseLang(req.query.lang);
   const { rows } = await pool.query(
     `SELECT id, title_content_id, department, closing_date, status FROM job_postings WHERE status = $1 ORDER BY closing_date ASC`,
     [status]
@@ -297,16 +321,14 @@ publicRouter.get('/job-postings', async (req, res) => {
 
   const results = await Promise.all(
     rows.map(async (row) => {
-      const tRes = await pool.query(
-        `SELECT title FROM content_translations WHERE content_id = $1 AND content_table = 'job_postings' AND language_code = 'en'`,
-        [row.title_content_id]
-      );
+      const t = await getTranslation(row.title_content_id, 'job_postings', lang);
       return {
         id: row.id,
-        title: tRes.rows[0]?.title ?? '(untitled)',
+        title: t.title ?? '(untitled)',
         department: row.department,
         closing_date: row.closing_date,
         status: row.status,
+        fallback_used: t.fallback_used,
       };
     })
   );
@@ -314,23 +336,22 @@ publicRouter.get('/job-postings', async (req, res) => {
   res.json({ results });
 });
 
-publicRouter.get('/tenders', async (_req, res) => {
+publicRouter.get('/tenders', async (req, res) => {
+  const lang = parseLang(req.query.lang);
   const { rows } = await pool.query(
     `SELECT id, title_content_id, reference_number, closing_date, file_url FROM tenders ORDER BY closing_date ASC`
   );
 
   const results = await Promise.all(
     rows.map(async (row) => {
-      const tRes = await pool.query(
-        `SELECT title FROM content_translations WHERE content_id = $1 AND content_table = 'tenders' AND language_code = 'en'`,
-        [row.title_content_id]
-      );
+      const t = await getTranslation(row.title_content_id, 'tenders', lang);
       return {
         id: row.id,
-        title: tRes.rows[0]?.title ?? '(untitled)',
+        title: t.title ?? '(untitled)',
         reference_number: row.reference_number,
         closing_date: row.closing_date,
         file_url: row.file_url,
+        fallback_used: t.fallback_used,
       };
     })
   );
@@ -338,14 +359,23 @@ publicRouter.get('/tenders', async (_req, res) => {
   res.json({ results });
 });
 
-publicRouter.get('/nav-items', async (_req, res) => {
+publicRouter.get('/nav-items', async (req, res) => {
+  const lang = parseLang(req.query.lang);
   const { rows } = await pool.query(
-    `SELECT id, label, path, parent_id, sort_order FROM nav_items WHERE is_active = true ORDER BY sort_order ASC`
+    `SELECT id, label, label_so, path, parent_id, sort_order FROM nav_items WHERE is_active = true ORDER BY sort_order ASC`
   );
 
-  const byId = new Map(rows.map((r) => [r.id, { ...r, children: [] as unknown[] }]));
+  const localized = rows.map((r) => ({
+    id: r.id,
+    label: lang === 'so' && r.label_so ? r.label_so : r.label,
+    path: r.path,
+    parent_id: r.parent_id,
+    sort_order: r.sort_order,
+  }));
+
+  const byId = new Map(localized.map((r) => [r.id, { ...r, children: [] as unknown[] }]));
   const roots: unknown[] = [];
-  for (const row of rows) {
+  for (const row of localized) {
     const node = byId.get(row.id)!;
     if (row.parent_id && byId.has(row.parent_id)) {
       byId.get(row.parent_id)!.children.push(node);

@@ -4,28 +4,32 @@ import { api } from '../lib/api';
 import { mediaUrl } from '../lib/media';
 import { NewsSlider } from '../components/NewsSlider';
 import { Reveal } from '../components/Reveal';
+import { useLanguage } from '../lib/LanguageContext';
+import { useT } from '../lib/i18n';
 import type { ExchangeRatesLatestResponse, PressReleasesResponse } from '@bos/shared-types';
 
-const CURRENCY_LABELS: Record<string, string> = {
-  USD: 'US Dollar',
-  SAR: 'Saudi Riyal',
-  ETB: 'Ethiopian Birr',
-  AED: 'UAE Dirham',
-};
-
 export function Home() {
+  const { lang } = useLanguage();
+  const t = useT();
   const [rates, setRates] = useState<ExchangeRatesLatestResponse | null>(null);
   const [press, setPress] = useState<PressReleasesResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const CURRENCY_LABELS: Record<string, string> = {
+    USD: t('usDollar'),
+    SAR: t('saudiRiyal'),
+    ETB: t('ethiopianBirr'),
+    AED: t('uaeDirham'),
+  };
+
   useEffect(() => {
-    Promise.all([api.latestRates(), api.pressReleases(1, 6)])
+    Promise.all([api.latestRates(), api.pressReleases(1, 6, lang)])
       .then(([r, p]) => {
         setRates(r);
         setPress(p);
       })
       .catch((e) => setError(e.message));
-  }, []);
+  }, [lang]);
 
   const sliderItems = (press?.results ?? []).slice(0, 5);
   const recentItems = (press?.results ?? []).slice(0, 3);
@@ -37,30 +41,29 @@ export function Home() {
       <section className="hero" style={{ padding: '56px 0 0' }}>
         <div className="wrap hero-grid">
           <div>
-            <div className="eyebrow">Central Bank of the Republic of Somaliland</div>
-            <h1>The official monetary authority of Somaliland</h1>
-            <p className="lede">
-              Daily exchange rates, the register of licensed financial institutions, and official publications —
-              published directly by the Bank of Somaliland.
-            </p>
+            <div className="eyebrow">{t('heroEyebrow')}</div>
+            <h1>{t('heroTitle')}</h1>
+            <p className="lede">{t('heroLede')}</p>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               <Link className="btn btn-primary" to="/institutions">
-                Verify a licensed institution
+                {t('verifyInstitution')}
               </Link>
               <Link className="btn btn-ghost" to="/publications">
-                View publications
+                {t('viewPublications')}
               </Link>
             </div>
           </div>
 
           <div className="ledger">
             <div className="ledger-head">
-              <h3>Official Exchange Rates</h3>
-              <span className="as-of">as of {rates?.as_of ?? '—'}</span>
+              <h3>{t('officialExchangeRates')}</h3>
+              <span className="as-of">
+                {t('asOf')} {rates?.as_of ?? '—'}
+              </span>
             </div>
             {error && <div className="status-error">{error}</div>}
-            {!error && !rates && <div className="status-loading">Loading rates…</div>}
-            {rates?.rates.length === 0 && <div className="status-loading">No rates published yet.</div>}
+            {!error && !rates && <div className="status-loading">{t('loadingRates')}</div>}
+            {rates?.rates.length === 0 && <div className="status-loading">{t('noRatesYet')}</div>}
             {rates?.rates.map((r) => (
               <div className="rate-row" key={r.currency_code}>
                 <div className="rate-cur">
@@ -77,10 +80,7 @@ export function Home() {
                 </div>
               </div>
             ))}
-            <div className="ledger-note">
-              "Official Rate" — set by the Bank of Somaliland. No free-floating market rate exists for the
-              Somaliland Shilling.
-            </div>
+            <div className="ledger-note">{t('officialRateNote')}</div>
           </div>
         </div>
         <div style={{ height: 40 }} />
@@ -91,15 +91,15 @@ export function Home() {
           <div className="wrap">
             <div className="section-head">
               <div>
-                <h2>Recent Announcements</h2>
-                <div className="sub">The latest from the Bank of Somaliland</div>
+                <h2>{t('recentAnnouncements')}</h2>
+                <div className="sub">{t('latestFromBank')}</div>
               </div>
               <Link className="view-all" to="/press">
-                View all press releases →
+                {t('viewAllPress')}
               </Link>
             </div>
-            {!press && !error && <div className="status-loading">Loading announcements…</div>}
-            {press?.results.length === 0 && <div className="status-loading">No announcements published yet.</div>}
+            {!press && !error && <div className="status-loading">{t('loadingAnnouncements')}</div>}
+            {press?.results.length === 0 && <div className="status-loading">{t('noAnnouncementsYet')}</div>}
             <div className="news-strip">
               {recentItems.map((item) => (
                 <article className="news-item" key={item.id}>

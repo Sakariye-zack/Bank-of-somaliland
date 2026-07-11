@@ -19,13 +19,14 @@ async function insertContent(
   contentTable: string,
   contentId: string,
   title: string,
-  body: string
+  body: string,
+  language: 'en' | 'so' = 'en'
 ) {
   await pool.query(
     `INSERT INTO content_translations (content_id, content_table, language_code, title, body)
-     VALUES ($1, $2, 'en', $3, $4)
+     VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (content_id, content_table, language_code) DO NOTHING`,
-    [contentId, contentTable, title, body]
+    [contentId, contentTable, language, title, body]
   );
 }
 
@@ -93,12 +94,30 @@ async function run() {
   }
 
   console.log('Seeding press releases...');
-  const pressReleases: [string, string, boolean][] = [
-    ['Governor meets licensed remittance operators', 'The Governor of the Bank of Somaliland met with representatives of licensed remittance operators to discuss compliance with anti-money-laundering guidance.', true],
-    ['Bank of Somaliland publishes Q2 stability report', 'The Bank has released its quarterly financial stability report, covering the licensed banking and remittance sectors.', true],
-    ['Notice: revised licensing fee schedule', 'Effective the next fiscal quarter, the Bank is updating its licensing fee schedule for supervised institutions.', false],
+  const pressReleases: [string, string, boolean, string, string][] = [
+    [
+      'Governor meets licensed remittance operators',
+      'The Governor of the Bank of Somaliland met with representatives of licensed remittance operators to discuss compliance with anti-money-laundering guidance.',
+      true,
+      'Guddoomiyuhu wuxuu la kulmay hay\'adaha xawaaladda ee shatiga leh',
+      'Guddoomiyaha Baanka Somaliland ayaa la kulmay wakiilada hay\'adaha xawaaladda ee shatiga leh, si ay uga wada hadlaan waajibaadka ka dhanka ah dhaqashada lacagta la maalgeliyay.',
+    ],
+    [
+      'Bank of Somaliland publishes Q2 stability report',
+      'The Bank has released its quarterly financial stability report, covering the licensed banking and remittance sectors.',
+      true,
+      'Baanka Somaliland ayaa daabacay warbixinta xasillooni ee rubuca 2aad',
+      'Baanku wuxuu sii daayay warbixintiisa rubuc-sanadeed ee xasilloonida maaliyadeed, oo daboolaysa qaybaha bangiyada iyo xawaaladda ee shatiga leh.',
+    ],
+    [
+      'Notice: revised licensing fee schedule',
+      'Effective the next fiscal quarter, the Bank is updating its licensing fee schedule for supervised institutions.',
+      false,
+      'Ogeysiis: jadwalka lacagaha shatiga oo la cusboonaysiiyay',
+      'Laga bilaabo rubuca dhaqaale ee soo socda, Baanku wuxuu cusboonaysiinayaa jadwalka lacagaha shatiga ee hay\'adaha la kormeero.',
+    ],
   ];
-  for (const [title, body, featured] of pressReleases) {
+  for (const [title, body, featured, titleSo, bodySo] of pressReleases) {
     if (await titleAlreadySeeded('press_releases', title)) continue;
     const { rows } = await pool.query(
       `INSERT INTO press_releases (publish_date, content_id, status, featured)
@@ -106,16 +125,17 @@ async function run() {
        RETURNING content_id`,
       [featured]
     );
-    await insertContent('press_releases', rows[0].content_id, title, body);
+    await insertContent('press_releases', rows[0].content_id, title, body, 'en');
+    await insertContent('press_releases', rows[0].content_id, titleSo, bodySo, 'so');
   }
 
   console.log('Seeding publications...');
-  const publications: [string, string, string][] = [
-    ['Annual Report 2025', 'annual_report', 'https://example-spaces.local/annual-report-2025.pdf'],
-    ['Circular 2026-03: Remittance AML Guidance', 'circular', 'https://example-spaces.local/circular-2026-03.pdf'],
-    ['Q2 2026 Financial Stability Report', 'stability_report', 'https://example-spaces.local/stability-report-q2-2026.pdf'],
+  const publications: [string, string, string, string][] = [
+    ['Annual Report 2025', 'annual_report', 'https://example-spaces.local/annual-report-2025.pdf', 'Warbixinta Sannadlaha ah 2025'],
+    ['Circular 2026-03: Remittance AML Guidance', 'circular', 'https://example-spaces.local/circular-2026-03.pdf', 'Wareegto 2026-03: Tilmaamaha Ka Hortagga Dhaqashada Lacagta ee Xawaaladda'],
+    ['Q2 2026 Financial Stability Report', 'stability_report', 'https://example-spaces.local/stability-report-q2-2026.pdf', 'Warbixinta Xasillooni ee Maaliyadeed Q2 2026'],
   ];
-  for (const [title, category, file_url] of publications) {
+  for (const [title, category, file_url, titleSo] of publications) {
     if (await titleAlreadySeeded('publications', title)) continue;
     const { rows } = await pool.query(
       `INSERT INTO publications (title_content_id, file_url, category, publish_date)
@@ -123,16 +143,38 @@ async function run() {
        RETURNING title_content_id`,
       [file_url, category]
     );
-    await insertContent('publications', rows[0].title_content_id, title, '');
+    await insertContent('publications', rows[0].title_content_id, title, '', 'en');
+    await insertContent('publications', rows[0].title_content_id, titleSo, '', 'so');
   }
 
   console.log('Seeding content pages...');
-  const pages: [string, string, string, string][] = [
-    ['about-the-bank', 'about', 'About the Bank', '<p>The Bank of Somaliland is the central monetary authority of Somaliland, responsible for currency issuance, financial supervision, and monetary policy.</p>'],
-    ['governance', 'governance', 'Governance', '<p>The Bank is governed by a Board chaired by the Governor, with oversight of monetary policy and financial sector supervision.</p>'],
-    ['core-functions', 'core_function', 'Core Functions', '<p>The Bank regulates licensed financial institutions, manages the national currency, and publishes official exchange rates.</p>'],
+  const pages: [string, string, string, string, string, string][] = [
+    [
+      'about-the-bank',
+      'about',
+      'About the Bank',
+      '<p>The Bank of Somaliland is the central monetary authority of Somaliland, responsible for currency issuance, financial supervision, and monetary policy.</p>',
+      'Ku Saabsan Baanka',
+      '<p>Baanka Somaliland waa maamulaha rasmiga ah ee lacagta Jamhuuriyadda Somaliland, kaas oo mas\'uul ka ah soo saarista lacagta, kormeerka nidaamka maaliyadeed, iyo siyaasadda lacagta.</p>',
+    ],
+    [
+      'governance',
+      'governance',
+      'Governance',
+      '<p>The Bank is governed by a Board chaired by the Governor, with oversight of monetary policy and financial sector supervision.</p>',
+      'Maamulka',
+      '<p>Baanka waxaa hoggaamiya Guddi uu madaxweyne ka yahay Guddoomiyaha, kaas oo kormeer ka sameeya siyaasadda lacagta iyo kormeerka qaybta maaliyadeed.</p>',
+    ],
+    [
+      'core-functions',
+      'core_function',
+      'Core Functions',
+      '<p>The Bank regulates licensed financial institutions, manages the national currency, and publishes official exchange rates.</p>',
+      'Shaqooyinka Aasaasiga ah',
+      '<p>Baanku wuxuu xakameeyaa hay\'adaha maaliyadeed ee shatiga leh, wuxuu maamulaa lacagta qaranka, wuxuuna daabacaa qiimaha sarraafka rasmiga ah.</p>',
+    ],
   ];
-  for (const [slug, page_type, title, body] of pages) {
+  for (const [slug, page_type, title, body, titleSo, bodySo] of pages) {
     const { rows } = await pool.query(
       `INSERT INTO content_pages (slug, page_type, status, updated_by)
        VALUES ($1, $2, 'published', $3)
@@ -140,52 +182,58 @@ async function run() {
        RETURNING id`,
       [slug, page_type, superAdminId]
     );
-    await insertContent('content_pages', rows[0].id, title, body);
+    await insertContent('content_pages', rows[0].id, title, body, 'en');
+    await insertContent('content_pages', rows[0].id, titleSo, bodySo, 'so');
   }
 
   console.log('Seeding laws & regulations...');
-  const laws: [string, string, string, string][] = [
-    ['Central Bank of Somaliland Act', 'https://example-spaces.local/central-bank-act.pdf', '54/2012', '2012-06-01'],
-    ['Anti-Money Laundering Regulation', 'https://example-spaces.local/aml-regulation.pdf', '12/2019', '2019-03-15'],
-    ['Licensed Institutions Supervision Directive', 'https://example-spaces.local/supervision-directive.pdf', '07/2023', '2023-01-10'],
+  const laws: [string, string, string, string, string][] = [
+    ['Central Bank of Somaliland Act', 'https://example-spaces.local/central-bank-act.pdf', '54/2012', '2012-06-01', 'Sharciga Baanka Dhexe ee Somaliland'],
+    ['Anti-Money Laundering Regulation', 'https://example-spaces.local/aml-regulation.pdf', '12/2019', '2019-03-15', 'Xeerka Ka Hortagga Dhaqashada Lacagta'],
+    ['Licensed Institutions Supervision Directive', 'https://example-spaces.local/supervision-directive.pdf', '07/2023', '2023-01-10', 'Tilmaanta Kormeerka Hay\'adaha Shatiga leh'],
   ];
-  for (const [title, file_url, law_number, effective_date] of laws) {
+  for (const [title, file_url, law_number, effective_date, titleSo] of laws) {
     if (await titleAlreadySeeded('laws_regulations', title)) continue;
     const { rows } = await pool.query(
       `INSERT INTO laws_regulations (title_content_id, file_url, law_number, effective_date)
        VALUES (uuid_generate_v4(), $1, $2, $3) RETURNING title_content_id`,
       [file_url, law_number, effective_date]
     );
-    await insertContent('laws_regulations', rows[0].title_content_id, title, '');
+    await insertContent('laws_regulations', rows[0].title_content_id, title, '', 'en');
+    await insertContent('laws_regulations', rows[0].title_content_id, titleSo, '', 'so');
   }
 
   console.log('Seeding job postings...');
-  const jobs: [string, string, string][] = [
-    ['Senior Bank Examiner', 'Bank Supervision Department', '2026-08-15'],
-    ['Currency Operations Officer', 'Currency Department', '2026-08-01'],
+  const jobs: [string, string, string, string][] = [
+    ['Senior Bank Examiner', 'Bank Supervision Department', '2026-08-15', 'Baadhe Bangi oo Sare'],
+    ['Currency Operations Officer', 'Currency Department', '2026-08-01', 'Sarkaal Hawlaha Lacagta'],
   ];
-  for (const [title, department, closing_date] of jobs) {
+  for (const [title, department, closing_date, titleSo] of jobs) {
     if (await titleAlreadySeeded('job_postings', title)) continue;
     const { rows } = await pool.query(
       `INSERT INTO job_postings (title_content_id, department, closing_date)
        VALUES (uuid_generate_v4(), $1, $2) RETURNING title_content_id`,
       [department, closing_date]
     );
-    await insertContent('job_postings', rows[0].title_content_id, title, '');
+    await insertContent('job_postings', rows[0].title_content_id, title, '', 'en');
+    await insertContent('job_postings', rows[0].title_content_id, titleSo, '', 'so');
   }
 
   console.log('Seeding tenders...');
-  const tenders: [string, string, string, string][] = [
-    ['Supply of IT Infrastructure Equipment', 'BOS-TND-2026-014', '2026-08-20', 'https://example-spaces.local/tender-2026-014.pdf'],
+  const tenders: [string, string, string, string, string][] = [
+    ['Supply of IT Infrastructure Equipment', 'BOS-TND-2026-014', '2026-08-20', 'https://example-spaces.local/tender-2026-014.pdf', 'Bixinta Qalabka Tignoolajiyadda IT'],
   ];
-  for (const [title, reference_number, closing_date, file_url] of tenders) {
+  for (const [title, reference_number, closing_date, file_url, titleSo] of tenders) {
     const { rows } = await pool.query(
       `INSERT INTO tenders (title_content_id, reference_number, closing_date, file_url)
        VALUES (uuid_generate_v4(), $1, $2, $3)
        ON CONFLICT (reference_number) DO NOTHING RETURNING title_content_id`,
       [reference_number, closing_date, file_url]
     );
-    if (rows[0]) await insertContent('tenders', rows[0].title_content_id, title, '');
+    if (rows[0]) {
+      await insertContent('tenders', rows[0].title_content_id, title, '', 'en');
+      await insertContent('tenders', rows[0].title_content_id, titleSo, '', 'so');
+    }
   }
 
   console.log('Seeding navigation...');
@@ -193,32 +241,32 @@ async function run() {
   if (existingNav.rows[0].n === 0) {
     const aboutId = (
       await pool.query(
-        `INSERT INTO nav_items (label, path, sort_order, updated_by) VALUES ('About', '#', 1, $1) RETURNING id`,
+        `INSERT INTO nav_items (label, label_so, path, sort_order, updated_by) VALUES ('About', 'Ku Saabsan', '#', 1, $1) RETURNING id`,
         [superAdminId]
       )
     ).rows[0].id;
     const resourcesId = (
       await pool.query(
-        `INSERT INTO nav_items (label, path, sort_order, updated_by) VALUES ('Resources', '#', 3, $1) RETURNING id`,
+        `INSERT INTO nav_items (label, label_so, path, sort_order, updated_by) VALUES ('Resources', 'Ilaha', '#', 3, $1) RETURNING id`,
         [superAdminId]
       )
     ).rows[0].id;
 
-    const navRows: [string, string, string | null, number][] = [
-      ['About the Bank', '/about', aboutId, 1],
-      ['Governance', '/governance', aboutId, 2],
-      ['Core Functions', '/core-functions', aboutId, 3],
-      ['Licensed Institutions', '/institutions', null, 2],
-      ['Publications', '/publications', resourcesId, 1],
-      ['Laws & Regulations', '/laws', resourcesId, 2],
-      ['Press Releases', '/press', resourcesId, 3],
-      ['Careers & Tenders', '/careers', resourcesId, 4],
-      ['Contact', '/contact', null, 4],
+    const navRows: [string, string, string, string | null, number][] = [
+      ['About the Bank', 'Ku Saabsan Baanka', '/about', aboutId, 1],
+      ['Governance', 'Maamulka', '/governance', aboutId, 2],
+      ['Core Functions', 'Shaqooyinka Aasaasiga ah', '/core-functions', aboutId, 3],
+      ['Licensed Institutions', 'Hay\'adaha Shatiga leh', '/institutions', null, 2],
+      ['Publications', 'Daabacaadaha', '/publications', resourcesId, 1],
+      ['Laws & Regulations', 'Sharciyada & Xeerarka', '/laws', resourcesId, 2],
+      ['Press Releases', 'War-saxaafadeedyo', '/press', resourcesId, 3],
+      ['Careers & Tenders', 'Shaqooyin & Dalabyo', '/careers', resourcesId, 4],
+      ['Contact', 'La Xiriir', '/contact', null, 4],
     ];
-    for (const [label, path, parent_id, sort_order] of navRows) {
+    for (const [label, labelSo, path, parent_id, sort_order] of navRows) {
       await pool.query(
-        `INSERT INTO nav_items (label, path, parent_id, sort_order, updated_by) VALUES ($1, $2, $3, $4, $5)`,
-        [label, path, parent_id, sort_order, superAdminId]
+        `INSERT INTO nav_items (label, label_so, path, parent_id, sort_order, updated_by) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [label, labelSo, path, parent_id, sort_order, superAdminId]
       );
     }
   }

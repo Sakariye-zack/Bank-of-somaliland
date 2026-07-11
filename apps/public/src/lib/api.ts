@@ -8,6 +8,7 @@ import type {
   JobPostingsResponse,
   TendersResponse,
   NavItemsResponse,
+  LanguageCode,
 } from '@bos/shared-types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/v1';
@@ -40,15 +41,15 @@ export const api = {
     const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]);
     return get<InstitutionsResponse>(`/institutions${qs.toString() ? `?${qs}` : ''}`);
   },
-  pressReleases: (page = 1, pageSize = 10) =>
-    get<PressReleasesResponse>(`/press-releases?page=${page}&page_size=${pageSize}`),
-  publications: (category?: string) =>
-    get<PublicationsResponse>(`/publications${category ? `?category=${category}` : ''}`),
+  pressReleases: (page = 1, pageSize = 10, lang: LanguageCode = 'en') =>
+    get<PressReleasesResponse>(`/press-releases?page=${page}&page_size=${pageSize}&lang=${lang}`),
+  publications: (category?: string, lang: LanguageCode = 'en') =>
+    get<PublicationsResponse>(`/publications?lang=${lang}${category ? `&category=${category}` : ''}`),
   content: (slug: string, lang: string) => get<ContentResponse>(`/content/${slug}?lang=${lang}`),
   submitContact: (payload: { name: string; email: string; subject: string; message: string }) =>
     post<{ status: string }>('/contact', payload),
-  lawsRegulations: () => get<LawsRegulationsResponse>('/laws-regulations'),
-  jobPostings: () => get<JobPostingsResponse>('/job-postings'),
-  tenders: () => get<TendersResponse>('/tenders'),
-  navItems: () => get<NavItemsResponse>('/nav-items'),
+  lawsRegulations: (lang: LanguageCode = 'en') => get<LawsRegulationsResponse>(`/laws-regulations?lang=${lang}`),
+  jobPostings: (lang: LanguageCode = 'en') => get<JobPostingsResponse>(`/job-postings?lang=${lang}`),
+  tenders: (lang: LanguageCode = 'en') => get<TendersResponse>(`/tenders?lang=${lang}`),
+  navItems: (lang: LanguageCode = 'en') => get<NavItemsResponse>(`/nav-items?lang=${lang}`),
 };

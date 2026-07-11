@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { api } from '../lib/api';
+import { useLanguage } from '../lib/LanguageContext';
+import { useT } from '../lib/i18n';
 import type { NavItem } from '@bos/shared-types';
 
 const FALLBACK_NAV: NavItem[] = [
@@ -47,33 +49,45 @@ function NavLinkOrExternal({ path, children }: { path: string; children: ReactNo
 export function Header() {
   const [navItems, setNavItems] = useState<NavItem[]>(FALLBACK_NAV);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { lang, setLang } = useLanguage();
+  const t = useT();
 
   useEffect(() => {
     api
-      .navItems()
+      .navItems(lang)
       .then((r) => {
         if (r.results.length > 0) setNavItems(r.results);
       })
       .catch(() => {
         // Keep the fallback nav — a nav-items outage shouldn't take down navigation entirely.
       });
-  }, []);
+  }, [lang]);
 
   return (
     <>
       <div className="utility">
         <div className="wrap">
           <div className="links">
-            <a href="tel:+252">Contact the Bank</a>
+            <a href="tel:+252">{t('contactTheBank')}</a>
           </div>
-          <div className="lang-switch" aria-label="Language switcher">
-            <button className="active" type="button" title="English (only fully supported language for now)">
+          <div className="lang-switch" aria-label={t('langSwitcher')}>
+            <button
+              className={lang === 'en' ? 'active' : ''}
+              type="button"
+              title={t('langEnTitle')}
+              onClick={() => setLang('en')}
+            >
               EN
             </button>
-            <button type="button" title="Somali — coming soon, will show fallback notice" disabled>
+            <button
+              className={lang === 'so' ? 'active' : ''}
+              type="button"
+              title={t('langSoTitle')}
+              onClick={() => setLang('so')}
+            >
               SO
             </button>
-            <button type="button" title="Arabic — coming soon, will show fallback notice" disabled>
+            <button type="button" title={t('langArTitle')} disabled>
               AR
             </button>
           </div>
@@ -82,17 +96,17 @@ export function Header() {
       <header className="site">
         <div className="wrap nav-row">
           <Link className="brand" to="/">
-            <img className="brand-mark-img" src="/logo.jpg" alt="Bank of Somaliland emblem" />
+            <img className="brand-mark-img" src="/logo.jpg" alt={t('bankEmblem')} />
             <div className="brand-text">
-              <div className="t1">Bank of Somaliland</div>
-              <div className="t2">Central Monetary Authority</div>
+              <div className="t1">{t('bankName')}</div>
+              <div className="t2">{t('centralMonetaryAuthority')}</div>
             </div>
           </Link>
 
           <button
             className="menu-toggle"
             type="button"
-            aria-label="Toggle navigation"
+            aria-label={t('toggleNav')}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((v) => !v)}
           >
