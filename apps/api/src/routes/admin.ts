@@ -598,6 +598,120 @@ adminRouter.put('/users/:id', requireRole('super_admin'), async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// Navigation items — content_editor, super_admin (site-wide structure, same
+// content-management role band). Ordering/parenting managed here rather than
+// in the DDL spec since the nav bar wasn't originally meant to be dynamic.
+// ---------------------------------------------------------------------------
+adminRouter.get('/nav-items', requireRole('content_editor', 'super_admin'), async (_req, res) => {
+  const { rows } = await pool.query(
+    `SELECT * FROM nav_items ORDER BY parent_id NULLS FIRST, sort_order ASC`
+  );
+  res.json({ results: rows });
+});
+
+const navItemSchema = z.object({
+  label: z.string().min(1).max(100),
+  path: z.string().min(1).max(300),
+  parent_id: z.string().uuid().nullable().optional(),
+  sort_order: z.number().int().optional(),
+});
+
+adminRouter.post('/nav-items', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const parsed = navItemSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Invalid navigation item payload.' } });
+  }
+  const { label, path, parent_id, sort_order } = parsed.data;
+
+  const { rows } = await pool.query(
+    `INSERT INTO nav_items (label, path, parent_id, sort_order, updated_by)
+     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+    [label, path, parent_id ?? null, sort_order ?? 0, req.user!.sub]
+  );
+
+  await writeAuditLog(req, {
+    action: 'create',
+    table_name: 'nav_items',
+    record_id: rows[0].id,
+    before_value: null,
+    after_value: rows[0],
+  });
+
+  res.status(201).json(rows[0]);
+});
+
+const navItemUpdateSchema = z.object({
+  label: z.string().min(1).max(100).optional(),
+  path: z.string().min(1).max(300).optional(),
+  parent_id: z.string().uuid().nullable().optional(),
+  sort_order: z.number().int().optional(),
+  is_active: z.boolean().optional(),
+});
+
+adminRouter.put('/nav-items/:id', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const parsed = navItemUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Invalid navigation item payload.' } });
+  }
+
+  const beforeRes = await pool.query('SELECT * FROM nav_items WHERE id = $1', [req.params.id]);
+  const before = beforeRes.rows[0];
+  if (!before) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Navigation item not found.' } });
+
+  const fields = parsed.data;
+  const sets: string[] = [];
+  const params: unknown[] = [];
+  for (const [key, value] of Object.entries(fields)) {
+    if (value === undefined) continue;
+    params.push(value);
+    sets.push(`${key} = $${params.length}`);
+  }
+  if (sets.length === 0) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'No fields to update.' } });
+  }
+  params.push(req.user!.sub);
+  sets.push(`updated_by = $${params.length}`);
+  sets.push('updated_at = now()');
+  params.push(req.params.id);
+
+  const { rows } = await pool.query(
+    `UPDATE nav_items SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
+    params
+  );
+
+  await writeAuditLog(req, {
+    action: 'update',
+    table_name: 'nav_items',
+    record_id: rows[0].id,
+    before_value: before,
+    after_value: rows[0],
+  });
+
+  res.json(rows[0]);
+});
+
+adminRouter.delete('/nav-items/:id', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const beforeRes = await pool.query('SELECT * FROM nav_items WHERE id = $1', [req.params.id]);
+  const before = beforeRes.rows[0];
+  if (!before) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Navigation item not found.' } });
+
+  // Detach children rather than cascading — deleting a parent shouldn't
+  // silently delete its dropdown items.
+  await pool.query('UPDATE nav_items SET parent_id = NULL WHERE parent_id = $1', [req.params.id]);
+  await pool.query('DELETE FROM nav_items WHERE id = $1', [req.params.id]);
+
+  await writeAuditLog(req, {
+    action: 'delete',
+    table_name: 'nav_items',
+    record_id: req.params.id,
+    before_value: before,
+    after_value: null,
+  });
+
+  res.status(204).send();
+});
+
+// ---------------------------------------------------------------------------
 // Audit log — super_admin only
 // ---------------------------------------------------------------------------
 adminRouter.get('/audit-log', requireRole('super_admin'), async (req, res) => {

@@ -197,3 +197,17 @@ export interface AuditLogEntry {
   admin_name?: string;
   admin_email?: string;
 }
+
+export interface NavItem {
+  id: string;
+  label: string;
+  path: string;
+  parent_id: string | null;
+  sort_order: number;
+  is_active?: boolean;
+  children?: NavItem[];
+}
+
+export interface NavItemsResponse {
+  results: NavItem[];
+}

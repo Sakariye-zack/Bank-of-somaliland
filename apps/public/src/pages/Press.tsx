@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { mediaUrl } from '../lib/media';
+import { Reveal } from '../components/Reveal';
 import type { PressReleasesResponse } from '@bos/shared-types';
 
 export function Press() {
@@ -19,6 +20,7 @@ export function Press() {
 
   return (
     <section>
+      <Reveal>
       <div className="wrap">
         <div className="section-head">
           <div>
@@ -71,6 +73,7 @@ export function Press() {
           </div>
         )}
       </div>
+      </Reveal>
     </section>
   );
 }

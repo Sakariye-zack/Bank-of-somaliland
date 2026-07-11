@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { mediaUrl } from '../lib/media';
+import { NewsSlider } from '../components/NewsSlider';
+import { Reveal } from '../components/Reveal';
 import type { ExchangeRatesLatestResponse, PressReleasesResponse } from '@bos/shared-types';
 
 const CURRENCY_LABELS: Record<string, string> = {
@@ -17,13 +19,16 @@ export function Home() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([api.latestRates(), api.pressReleases(1, 3)])
+    Promise.all([api.latestRates(), api.pressReleases(1, 6)])
       .then(([r, p]) => {
         setRates(r);
         setPress(p);
       })
       .catch((e) => setError(e.message));
   }, []);
+
+  const sliderItems = (press?.results ?? []).slice(0, 5);
+  const recentItems = (press?.results ?? []).slice(0, 3);
 
   return (
     <>
@@ -79,32 +84,36 @@ export function Home() {
         <div style={{ height: 40 }} />
       </section>
 
-      <section>
-        <div className="wrap">
-          <div className="section-head">
-            <div>
-              <h2>Recent Announcements</h2>
-              <div className="sub">The latest from the Bank of Somaliland</div>
+      {sliderItems.length > 0 && <NewsSlider items={sliderItems} />}
+
+      <Reveal>
+        <section>
+          <div className="wrap">
+            <div className="section-head">
+              <div>
+                <h2>Recent Announcements</h2>
+                <div className="sub">The latest from the Bank of Somaliland</div>
+              </div>
+              <Link className="view-all" to="/press">
+                View all press releases →
+              </Link>
             </div>
-            <Link className="view-all" to="/press">
-              View all press releases →
-            </Link>
+            {!press && !error && <div className="status-loading">Loading announcements…</div>}
+            {press?.results.length === 0 && <div className="status-loading">No announcements published yet.</div>}
+            <div className="news-strip">
+              {recentItems.map((item) => (
+                <article className="news-item" key={item.id}>
+                  {item.images.length > 0 && (
+                    <img className="news-item-thumb" src={mediaUrl(item.images[0])} alt="" />
+                  )}
+                  <div className="date">{item.publish_date}</div>
+                  <h4>{item.title}</h4>
+                </article>
+              ))}
+            </div>
           </div>
-          {!press && !error && <div className="status-loading">Loading announcements…</div>}
-          {press?.results.length === 0 && <div className="status-loading">No announcements published yet.</div>}
-          <div className="news-strip">
-            {press?.results.map((item) => (
-              <article className="news-item" key={item.id}>
-                {item.images.length > 0 && (
-                  <img className="news-item-thumb" src={mediaUrl(item.images[0])} alt="" />
-                )}
-                <div className="date">{item.publish_date}</div>
-                <h4>{item.title}</h4>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      </Reveal>
     </>
   );
 }

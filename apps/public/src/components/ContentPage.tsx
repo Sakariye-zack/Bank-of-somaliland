@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { Reveal } from './Reveal';
 import type { ContentResponse } from '@bos/shared-types';
 
 export function ContentPage({ slug }: { slug: string }) {
@@ -17,21 +18,23 @@ export function ContentPage({ slug }: { slug: string }) {
 
   return (
     <section>
-      <div className="wrap" style={{ maxWidth: 760 }}>
-        {error && <div className="status-error">{error}</div>}
-        {!content && !error && <div className="status-loading">Loading…</div>}
-        {content?.fallback_used && (
-          <div className="fallback-notice">
-            This page is not yet translated into the language you requested — showing the English version instead.
-          </div>
-        )}
-        {content && (
-          <>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 30 }}>{content.title}</h2>
-            <div dangerouslySetInnerHTML={{ __html: content.body ?? '' }} />
-          </>
-        )}
-      </div>
+      <Reveal>
+        <div className="wrap" style={{ maxWidth: 760 }}>
+          {error && <div className="status-error">{error}</div>}
+          {!content && !error && <div className="status-loading">Loading…</div>}
+          {content?.fallback_used && (
+            <div className="fallback-notice">
+              This page is not yet translated into the language you requested — showing the English version instead.
+            </div>
+          )}
+          {content && (
+            <>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 30 }}>{content.title}</h2>
+              <div dangerouslySetInnerHTML={{ __html: content.body ?? '' }} />
+            </>
+          )}
+        </div>
+      </Reveal>
     </section>
   );
 }

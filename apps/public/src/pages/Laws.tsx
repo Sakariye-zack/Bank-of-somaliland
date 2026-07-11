@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { mediaUrl } from '../lib/media';
+import { Reveal } from '../components/Reveal';
 import type { LawRegulation } from '@bos/shared-types';
 
 export function Laws() {
@@ -16,6 +17,7 @@ export function Laws() {
 
   return (
     <section>
+      <Reveal>
       <div className="wrap">
         <div className="section-head">
           <div>
@@ -45,6 +47,7 @@ export function Laws() {
           ))}
         </div>
       </div>
+      </Reveal>
     </section>
   );
 }

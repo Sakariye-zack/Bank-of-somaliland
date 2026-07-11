@@ -188,6 +188,41 @@ async function run() {
     if (rows[0]) await insertContent('tenders', rows[0].title_content_id, title, '');
   }
 
+  console.log('Seeding navigation...');
+  const existingNav = await pool.query('SELECT count(*)::int AS n FROM nav_items');
+  if (existingNav.rows[0].n === 0) {
+    const aboutId = (
+      await pool.query(
+        `INSERT INTO nav_items (label, path, sort_order, updated_by) VALUES ('About', '#', 1, $1) RETURNING id`,
+        [superAdminId]
+      )
+    ).rows[0].id;
+    const resourcesId = (
+      await pool.query(
+        `INSERT INTO nav_items (label, path, sort_order, updated_by) VALUES ('Resources', '#', 3, $1) RETURNING id`,
+        [superAdminId]
+      )
+    ).rows[0].id;
+
+    const navRows: [string, string, string | null, number][] = [
+      ['About the Bank', '/about', aboutId, 1],
+      ['Governance', '/governance', aboutId, 2],
+      ['Core Functions', '/core-functions', aboutId, 3],
+      ['Licensed Institutions', '/institutions', null, 2],
+      ['Publications', '/publications', resourcesId, 1],
+      ['Laws & Regulations', '/laws', resourcesId, 2],
+      ['Press Releases', '/press', resourcesId, 3],
+      ['Careers & Tenders', '/careers', resourcesId, 4],
+      ['Contact', '/contact', null, 4],
+    ];
+    for (const [label, path, parent_id, sort_order] of navRows) {
+      await pool.query(
+        `INSERT INTO nav_items (label, path, parent_id, sort_order, updated_by) VALUES ($1, $2, $3, $4, $5)`,
+        [label, path, parent_id, sort_order, superAdminId]
+      );
+    }
+  }
+
   console.log('Seed complete.');
   await pool.end();
 }

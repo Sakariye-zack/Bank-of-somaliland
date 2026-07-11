@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { mediaUrl } from '../lib/media';
+import { Reveal } from '../components/Reveal';
 import type { Publication, PublicationCategory } from '@bos/shared-types';
 
 const CATEGORY_LABELS: Record<PublicationCategory, string> = {
@@ -23,6 +24,7 @@ export function Publications() {
 
   return (
     <section>
+      <Reveal>
       <div className="wrap">
         <div className="section-head">
           <div>
@@ -60,6 +62,7 @@ export function Publications() {
           ))}
         </div>
       </div>
+      </Reveal>
     </section>
   );
 }

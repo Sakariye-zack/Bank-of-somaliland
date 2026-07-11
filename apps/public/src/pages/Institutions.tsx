@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { Reveal } from '../components/Reveal';
 import type { Institution, InstitutionType } from '@bos/shared-types';
 
 const TYPE_LABELS: Record<InstitutionType, string> = {
@@ -31,6 +32,7 @@ export function Institutions() {
 
   return (
     <section>
+      <Reveal>
       <div className="wrap">
         <div className="section-head">
           <div>
@@ -96,6 +98,7 @@ export function Institutions() {
           )}
         </div>
       </div>
+      </Reveal>
     </section>
   );
 }

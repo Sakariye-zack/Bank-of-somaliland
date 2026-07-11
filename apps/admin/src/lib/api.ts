@@ -10,6 +10,7 @@ import type {
   UploadMediaResponse,
   Publication,
   LawRegulation,
+  NavItem,
 } from '@bos/shared-types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/v1';
@@ -161,4 +162,14 @@ export const api = {
     law_number?: string;
     effective_date?: string;
   }) => request<LawRegulation>('/admin/laws-regulations', { method: 'POST', body: JSON.stringify(payload) }),
+
+  navItems: () =>
+    request<{ results: (NavItem & { parent_id: string | null; is_active: boolean })[] }>('/admin/nav-items'),
+  createNavItem: (payload: { label: string; path: string; parent_id?: string | null; sort_order?: number }) =>
+    request<NavItem>('/admin/nav-items', { method: 'POST', body: JSON.stringify(payload) }),
+  updateNavItem: (
+    id: string,
+    payload: Partial<{ label: string; path: string; parent_id: string | null; sort_order: number; is_active: boolean }>
+  ) => request<NavItem>(`/admin/nav-items/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteNavItem: (id: string) => request<void>(`/admin/nav-items/${id}`, { method: 'DELETE' }),
 };

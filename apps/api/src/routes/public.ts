@@ -337,3 +337,22 @@ publicRouter.get('/tenders', async (_req, res) => {
 
   res.json({ results });
 });
+
+publicRouter.get('/nav-items', async (_req, res) => {
+  const { rows } = await pool.query(
+    `SELECT id, label, path, parent_id, sort_order FROM nav_items WHERE is_active = true ORDER BY sort_order ASC`
+  );
+
+  const byId = new Map(rows.map((r) => [r.id, { ...r, children: [] as unknown[] }]));
+  const roots: unknown[] = [];
+  for (const row of rows) {
+    const node = byId.get(row.id)!;
+    if (row.parent_id && byId.has(row.parent_id)) {
+      byId.get(row.parent_id)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+
+  res.json({ results: roots });
+});

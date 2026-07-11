@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { mediaUrl } from '../lib/media';
+import { Reveal } from '../components/Reveal';
 import type { JobPosting, Tender } from '@bos/shared-types';
 
 export function Careers() {
@@ -19,6 +20,7 @@ export function Careers() {
 
   return (
     <>
+      <Reveal>
       <section>
         <div className="wrap">
           <div className="section-head">
@@ -42,7 +44,9 @@ export function Careers() {
           </div>
         </div>
       </section>
+      </Reveal>
 
+      <Reveal>
       <section style={{ paddingTop: 0 }}>
         <div className="wrap">
           <div className="section-head">
@@ -75,6 +79,7 @@ export function Careers() {
           </div>
         </div>
       </section>
+      </Reveal>
     </>
   );
 }

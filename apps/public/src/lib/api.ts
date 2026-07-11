@@ -7,6 +7,7 @@ import type {
   LawsRegulationsResponse,
   JobPostingsResponse,
   TendersResponse,
+  NavItemsResponse,
 } from '@bos/shared-types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/v1';
@@ -49,4 +50,5 @@ export const api = {
   lawsRegulations: () => get<LawsRegulationsResponse>('/laws-regulations'),
   jobPostings: () => get<JobPostingsResponse>('/job-postings'),
   tenders: () => get<TendersResponse>('/tenders'),
+  navItems: () => get<NavItemsResponse>('/nav-items'),
 };
