@@ -289,15 +289,16 @@ nav.primary .caret {
 /* News slider */
 .news-slider {
   position: relative;
-  height: 480px;
+  height: 640px;
   overflow: hidden;
   background: var(--night-2);
+  border-bottom: 3px solid var(--gold);
 }
 .news-slider-track {
   display: flex;
   width: 100%;
   height: 100%;
-  transition: transform 0.7s cubic-bezier(0.65, 0, 0.35, 1);
+  transition: transform 0.8s cubic-bezier(0.65, 0, 0.35, 1);
 }
 .news-slide {
   position: relative;
@@ -312,31 +313,38 @@ nav.primary .caret {
   height: 100%;
   object-fit: cover;
   transform: scale(1.06);
-  transition: transform 8s ease-out;
+  transition: transform 9s ease-out;
 }
 .news-slide.is-active .news-slide-img {
-  transform: scale(1.16);
+  transform: scale(1.14);
 }
 .news-slide-fallback {
   position: absolute;
   inset: 0;
   background: linear-gradient(135deg, var(--night) 0%, var(--night-2) 60%, #0d5730 100%);
 }
+.news-slide-fallback::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(217, 151, 29, 0.14) 1.5px, transparent 1.5px);
+  background-size: 26px 26px;
+}
 .news-slide-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(0deg, rgba(7, 22, 15, 0.92) 0%, rgba(7, 22, 15, 0.35) 55%, rgba(7, 22, 15, 0.15) 100%);
+  background: linear-gradient(0deg, rgba(4, 14, 9, 0.94) 0%, rgba(4, 14, 9, 0.45) 48%, rgba(4, 14, 9, 0.1) 100%);
 }
 .news-slide-content {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 40px 44px 56px;
-  max-width: 720px;
+  padding: 52px 64px 68px;
+  max-width: 780px;
   color: #f4efe2;
   opacity: 0;
-  transform: translateY(16px);
+  transform: translateY(20px);
   transition: opacity 0.6s ease 0.15s, transform 0.6s ease 0.15s;
 }
 .news-slide.is-active .news-slide-content {
@@ -344,37 +352,43 @@ nav.primary .caret {
   transform: translateY(0);
 }
 .news-slide-eyebrow {
+  display: inline-block;
   font-family: var(--font-mono);
   font-size: 12px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--gold);
-  margin-bottom: 12px;
+  color: var(--night);
+  background: var(--gold);
+  padding: 5px 12px;
+  border-radius: 3px;
+  margin-bottom: 18px;
 }
 .news-slide-title {
   font-family: var(--font-display);
-  font-size: 32px;
-  line-height: 1.2;
+  font-size: 40px;
+  line-height: 1.18;
   font-weight: 600;
-  margin: 0 0 12px;
+  margin: 0 0 14px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
 }
 .news-slide-date {
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 13px;
   color: #cbc1a6;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 .news-slider-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  border: 1px solid rgba(244, 239, 226, 0.35);
-  background: rgba(7, 22, 15, 0.4);
+  border: 1.5px solid rgba(244, 239, 226, 0.45);
+  background: rgba(4, 14, 9, 0.35);
+  backdrop-filter: blur(2px);
   color: #f4efe2;
-  font-size: 24px;
+  font-size: 26px;
   line-height: 1;
   cursor: pointer;
   display: flex;
@@ -387,49 +401,60 @@ nav.primary .caret {
   background: var(--gold);
   color: var(--night);
   border-color: var(--gold);
+  transform: translateY(-50%) scale(1.06);
 }
 .news-slider-arrow.prev {
-  left: 20px;
+  left: 28px;
 }
 .news-slider-arrow.next {
-  right: 20px;
+  right: 28px;
 }
 .news-slider-dots {
   position: absolute;
-  right: 44px;
-  bottom: 22px;
+  left: 0;
+  right: 0;
+  bottom: 26px;
   display: flex;
-  gap: 9px;
+  justify-content: center;
+  gap: 10px;
   z-index: 5;
 }
 .news-slider-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+  width: 34px;
+  height: 4px;
+  border-radius: 2px;
   border: none;
-  background: rgba(244, 239, 226, 0.4);
+  background: rgba(244, 239, 226, 0.35);
   cursor: pointer;
   padding: 0;
   transition: background 0.2s ease, transform 0.2s ease;
 }
 .news-slider-dot.is-active {
   background: var(--gold);
-  transform: scale(1.25);
 }
 @media (max-width: 760px) {
   .news-slider {
-    height: 360px;
+    height: 460px;
   }
   .news-slide-content {
-    padding: 26px 24px 36px;
+    padding: 30px 26px 44px;
   }
   .news-slide-title {
-    font-size: 24px;
+    font-size: 26px;
   }
   .news-slider-arrow {
-    width: 36px;
-    height: 36px;
-    font-size: 20px;
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+  }
+  .news-slider-arrow.prev {
+    left: 14px;
+  }
+  .news-slider-arrow.next {
+    right: 14px;
+  }
+  .news-slider-dot {
+    width: 22px;
   }
 }
 

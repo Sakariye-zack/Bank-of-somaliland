@@ -32,6 +32,8 @@ export function Home() {
 
   return (
     <>
+      {sliderItems.length > 0 && <NewsSlider items={sliderItems} />}
+
       <section className="hero" style={{ padding: '56px 0 0' }}>
         <div className="wrap hero-grid">
           <div>
@@ -83,8 +85,6 @@ export function Home() {
         </div>
         <div style={{ height: 40 }} />
       </section>
-
-      {sliderItems.length > 0 && <NewsSlider items={sliderItems} />}
 
       <Reveal>
         <section>
