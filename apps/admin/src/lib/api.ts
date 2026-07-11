@@ -8,6 +8,8 @@ import type {
   LanguageCode,
   PressRelease,
   UploadMediaResponse,
+  Publication,
+  LawRegulation,
 } from '@bos/shared-types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/v1';
@@ -127,10 +129,11 @@ export const api = {
     payload: { language_code: LanguageCode; title?: string; body?: string; status?: 'draft' | 'published' }
   ) => request(`/admin/content/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
 
-  uploadMedia: (images: File[], video: File | null) => {
+  uploadMedia: (images: File[], video: File | null, document: File | null = null) => {
     const formData = new FormData();
     for (const img of images) formData.append('images', img);
     if (video) formData.append('video', video);
+    if (document) formData.append('document', document);
     return uploadRequest<UploadMediaResponse>('/admin/uploads', formData);
   },
   pressReleases: () => request<{ results: PressRelease[] }>('/press-releases?page=1&page_size=50'),
@@ -142,4 +145,20 @@ export const api = {
     images?: string[];
     video_url?: string | null;
   }) => request<PressRelease>('/admin/press-releases', { method: 'POST', body: JSON.stringify(payload) }),
+
+  publications: () => request<{ results: Publication[] }>('/publications'),
+  createPublication: (payload: {
+    title: string;
+    file_url: string;
+    category: string;
+    publish_date: string;
+  }) => request<Publication>('/admin/publications', { method: 'POST', body: JSON.stringify(payload) }),
+
+  lawsRegulations: () => request<{ results: LawRegulation[] }>('/laws-regulations'),
+  createLawRegulation: (payload: {
+    title: string;
+    file_url: string;
+    law_number?: string;
+    effective_date?: string;
+  }) => request<LawRegulation>('/admin/laws-regulations', { method: 'POST', body: JSON.stringify(payload) }),
 };

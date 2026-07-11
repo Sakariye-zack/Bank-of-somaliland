@@ -6,5 +6,7 @@ dist/
 .DS_Store
 apps/api/uploads/images/*
 apps/api/uploads/videos/*
+apps/api/uploads/documents/*
 !apps/api/uploads/images/.gitkeep
 !apps/api/uploads/videos/.gitkeep
+!apps/api/uploads/documents/.gitkeep

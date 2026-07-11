@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { mediaUrl } from '../lib/media';
 import type { LawRegulation } from '@bos/shared-types';
 
 export function Laws() {
@@ -36,7 +37,7 @@ export function Laws() {
               <div className="pub-body">
                 <h4>{law.title}</h4>
                 <div className="meta">{law.effective_date ?? '—'}</div>
-                <a className="dl" href={law.file_url} target="_blank" rel="noreferrer">
+                <a className="dl" href={mediaUrl(law.file_url)} target="_blank" rel="noreferrer">
                   Download PDF →
                 </a>
               </div>

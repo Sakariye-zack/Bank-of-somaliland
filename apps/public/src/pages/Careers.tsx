@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { mediaUrl } from '../lib/media';
 import type { JobPosting, Tender } from '@bos/shared-types';
 
 export function Careers() {
@@ -61,7 +62,7 @@ export function Careers() {
                 {tender.file_url && (
                   <a
                     className="dl"
-                    href={tender.file_url}
+                    href={mediaUrl(tender.file_url)}
                     target="_blank"
                     rel="noreferrer"
                     style={{ fontSize: 13, fontWeight: 600, color: 'var(--teal)', textDecoration: 'none' }}

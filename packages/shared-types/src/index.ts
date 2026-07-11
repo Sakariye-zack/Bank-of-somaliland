@@ -111,6 +111,7 @@ export interface PressReleasesResponse {
 export interface UploadMediaResponse {
   images: string[];
   video: string | null;
+  document: string | null;
 }
 
 export type PublicationCategory = 'annual_report' | 'circular' | 'stability_report';

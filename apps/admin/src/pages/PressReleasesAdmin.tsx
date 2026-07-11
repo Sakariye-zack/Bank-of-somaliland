@@ -1,12 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
+import { mediaUrl } from '../lib/media';
 import type { PressRelease } from '@bos/shared-types';
-
-const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/v1').replace(/\/v1$/, '');
-
-function mediaUrl(path: string): string {
-  return path.startsWith('http') ? path : `${API_ORIGIN}${path}`;
-}
 
 export function PressReleasesAdmin() {
   const [releases, setReleases] = useState<PressRelease[]>([]);

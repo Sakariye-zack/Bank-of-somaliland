@@ -19,8 +19,10 @@ adminRouter.post('/uploads', requireRole('content_editor', 'super_admin'), (req,
       return res.status(400).json({ error: { code: 'UPLOAD_FAILED', message } });
     }
 
-    const files = req.files as { images?: Express.Multer.File[]; video?: Express.Multer.File[] } | undefined;
-    if (!files || (!files.images?.length && !files.video?.length)) {
+    const files = req.files as
+      | { images?: Express.Multer.File[]; video?: Express.Multer.File[]; document?: Express.Multer.File[] }
+      | undefined;
+    if (!files || (!files.images?.length && !files.video?.length && !files.document?.length)) {
       return res.status(400).json({ error: { code: 'NO_FILES', message: 'No files were uploaded.' } });
     }
 
@@ -33,6 +35,7 @@ adminRouter.post('/uploads', requireRole('content_editor', 'super_admin'), (req,
     res.status(201).json({
       images: (files.images ?? []).map(publicUrlFor),
       video: files.video?.[0] ? publicUrlFor(files.video[0]) : null,
+      document: files.document?.[0] ? publicUrlFor(files.document[0]) : null,
     });
   });
 });
@@ -280,7 +283,7 @@ adminRouter.post('/institutions', requireRole('supervision_data_officer', 'super
 // ---------------------------------------------------------------------------
 const lawSchema = z.object({
   title: z.string().min(1).max(300),
-  file_url: z.string().url().max(500),
+  file_url: z.string().max(500),
   law_number: z.string().max(50).optional(),
   effective_date: z.string().optional(),
 });
@@ -306,6 +309,42 @@ adminRouter.post('/laws-regulations', requireRole('content_editor', 'super_admin
   await writeAuditLog(req, {
     action: 'create',
     table_name: 'laws_regulations',
+    record_id: rows[0].id,
+    before_value: null,
+    after_value: { ...rows[0], title },
+  });
+
+  res.status(201).json({ ...rows[0], title });
+});
+
+const publicationSchema = z.object({
+  title: z.string().min(1).max(300),
+  file_url: z.string().max(500),
+  category: z.enum(['annual_report', 'circular', 'stability_report']),
+  publish_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+adminRouter.post('/publications', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const parsed = publicationSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Invalid publication payload.' } });
+  }
+  const { title, file_url, category, publish_date } = parsed.data;
+
+  const { rows } = await pool.query(
+    `INSERT INTO publications (title_content_id, file_url, category, publish_date)
+     VALUES (uuid_generate_v4(), $1, $2, $3) RETURNING *`,
+    [file_url, category, publish_date]
+  );
+  await pool.query(
+    `INSERT INTO content_translations (content_id, content_table, language_code, title)
+     VALUES ($1, 'publications', 'en', $2)`,
+    [rows[0].title_content_id, title]
+  );
+
+  await writeAuditLog(req, {
+    action: 'create',
+    table_name: 'publications',
     record_id: rows[0].id,
     before_value: null,
     after_value: { ...rows[0], title },
@@ -380,7 +419,7 @@ const tenderSchema = z.object({
   title: z.string().min(1).max(300),
   reference_number: z.string().min(1).max(50),
   closing_date: z.string(),
-  file_url: z.string().url().max(500).optional(),
+  file_url: z.string().max(500).optional(),
 });
 
 adminRouter.post('/tenders', requireRole('content_editor', 'super_admin'), async (req, res) => {

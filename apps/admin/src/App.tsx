@@ -6,6 +6,7 @@ import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { ContentEditor } from './pages/ContentEditor';
 import { PressReleasesAdmin } from './pages/PressReleasesAdmin';
+import { PublicationsAdmin } from './pages/PublicationsAdmin';
 import { ExchangeRates } from './pages/ExchangeRates';
 import { InstitutionsAdmin } from './pages/InstitutionsAdmin';
 import { Users } from './pages/Users';
@@ -37,6 +38,14 @@ function App() {
             element={
               <ProtectedRoute roles={['super_admin', 'content_editor']}>
                 <PressReleasesAdmin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/publications"
+            element={
+              <ProtectedRoute roles={['super_admin', 'content_editor']}>
+                <PublicationsAdmin />
               </ProtectedRoute>
             }
           />

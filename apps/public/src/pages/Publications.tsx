@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { mediaUrl } from '../lib/media';
 import type { Publication, PublicationCategory } from '@bos/shared-types';
 
 const CATEGORY_LABELS: Record<PublicationCategory, string> = {
@@ -51,7 +52,7 @@ export function Publications() {
               <div className="pub-body">
                 <h4>{pub.title}</h4>
                 <div className="meta">{pub.publish_date}</div>
-                <a className="dl" href={pub.file_url} target="_blank" rel="noreferrer">
+                <a className="dl" href={mediaUrl(pub.file_url)} target="_blank" rel="noreferrer">
                   Download PDF →
                 </a>
               </div>
