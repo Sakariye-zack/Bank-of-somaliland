@@ -9,6 +9,7 @@ import type {
   TendersResponse,
   NavItemsResponse,
   LanguageCode,
+  HeroSlidesResponse,
 } from '@bos/shared-types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/v1';
@@ -52,4 +53,5 @@ export const api = {
   jobPostings: (lang: LanguageCode = 'en') => get<JobPostingsResponse>(`/job-postings?lang=${lang}`),
   tenders: (lang: LanguageCode = 'en') => get<TendersResponse>(`/tenders?lang=${lang}`),
   navItems: (lang: LanguageCode = 'en') => get<NavItemsResponse>(`/nav-items?lang=${lang}`),
+  heroSlides: (lang: LanguageCode = 'en') => get<HeroSlidesResponse>(`/hero-slides?lang=${lang}`),
 };

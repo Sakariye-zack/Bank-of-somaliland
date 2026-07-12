@@ -386,3 +386,23 @@ publicRouter.get('/nav-items', async (req, res) => {
 
   res.json({ results: roots });
 });
+
+publicRouter.get('/hero-slides', async (req, res) => {
+  const lang = parseLang(req.query.lang);
+  const { rows } = await pool.query(
+    `SELECT id, title, title_so, subtitle, subtitle_so, image_url, video_url, link_url, sort_order
+     FROM hero_slides WHERE is_active = true ORDER BY sort_order ASC`
+  );
+
+  res.json({
+    results: rows.map((r) => ({
+      id: r.id,
+      title: lang === 'so' && r.title_so ? r.title_so : r.title,
+      subtitle: (lang === 'so' && r.subtitle_so ? r.subtitle_so : r.subtitle) ?? null,
+      image_url: r.image_url,
+      video_url: r.video_url,
+      link_url: r.link_url,
+      sort_order: r.sort_order,
+    })),
+  });
+});

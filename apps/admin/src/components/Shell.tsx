@@ -3,6 +3,7 @@ import { useAuth } from '../lib/AuthContext';
 
 const NAV_ITEMS: { to: string; label: string; roles: string[] }[] = [
   { to: '/', label: 'Dashboard', roles: ['super_admin', 'content_editor', 'supervision_data_officer', 'exchange_rate_officer'] },
+  { to: '/hero-slides', label: 'Homepage Slider', roles: ['super_admin', 'content_editor'] },
   { to: '/content', label: 'Content Editor', roles: ['super_admin', 'content_editor'] },
   { to: '/press-releases', label: 'Press Releases', roles: ['super_admin', 'content_editor'] },
   { to: '/publications', label: 'Publications & Laws', roles: ['super_admin', 'content_editor'] },

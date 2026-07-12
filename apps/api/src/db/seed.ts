@@ -271,6 +271,33 @@ async function run() {
     }
   }
 
+  console.log('Seeding hero slides...');
+  const existingSlides = await pool.query('SELECT count(*)::int AS n FROM hero_slides');
+  if (existingSlides.rows[0].n === 0) {
+    const slides: [string, string, string, string][] = [
+      [
+        'The official monetary authority of Somaliland',
+        'Maamulaha rasmiga ah ee lacagta Somaliland',
+        'Daily exchange rates, licensed institutions, and official publications.',
+        'Qiimaha sarraafka maalinlaha ah, hay\'adaha shatiga leh, iyo daabacaadaha rasmiga ah.',
+      ],
+      [
+        'Verify a licensed institution in seconds',
+        'Hubi hay\'ad shati leh daqiiqado gudahood',
+        'Search the official register maintained by the Bank Supervision Department.',
+        'Ka raadi diiwaanka rasmiga ah ee uu maamulo Waaxda Kormeerka Bangiyada.',
+      ],
+    ];
+    for (let i = 0; i < slides.length; i++) {
+      const [title, titleSo, subtitle, subtitleSo] = slides[i];
+      await pool.query(
+        `INSERT INTO hero_slides (title, title_so, subtitle, subtitle_so, link_url, sort_order, updated_by)
+         VALUES ($1, $2, $3, $4, '/press', $5, $6)`,
+        [title, titleSo, subtitle, subtitleSo, i + 1, superAdminId]
+      );
+    }
+  }
+
   console.log('Seed complete.');
   await pool.end();
 }

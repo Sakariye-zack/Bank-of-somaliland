@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { mediaUrl } from '../lib/media';
 import { useT } from '../lib/i18n';
-import type { PressRelease } from '@bos/shared-types';
+import type { HeroSlide } from '@bos/shared-types';
 
 const AUTO_ADVANCE_MS = 6000;
 
-export function NewsSlider({ items }: { items: PressRelease[] }) {
+export function NewsSlider({ items }: { items: HeroSlide[] }) {
   const t = useT();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -42,17 +42,20 @@ export function NewsSlider({ items }: { items: PressRelease[] }) {
       <div className="news-slider-track" style={{ transform: `translateX(-${active * 100}%)` }}>
         {items.map((item, i) => (
           <div className={`news-slide${i === active ? ' is-active' : ''}`} key={item.id} aria-hidden={i !== active}>
-            {item.images[0] ? (
-              <img className="news-slide-img" src={mediaUrl(item.images[0])} alt="" />
+            {item.image_url ? (
+              <img className="news-slide-img" src={mediaUrl(item.image_url)} alt="" />
+            ) : item.video_url ? (
+              <video className="news-slide-img news-slide-video" src={mediaUrl(item.video_url)} muted loop autoPlay playsInline />
             ) : (
               <div className="news-slide-fallback" />
             )}
+            <img className="news-slide-watermark" src="/logo.jpg" alt="" />
             <div className="news-slide-scrim" />
             <div className="news-slide-content">
               <div className="news-slide-eyebrow">{t('sliderEyebrow')}</div>
               <h2 className="news-slide-title">{item.title}</h2>
-              <div className="news-slide-date">{item.publish_date}</div>
-              <Link className="btn btn-primary" to="/press">
+              {item.subtitle && <p className="news-slide-subtitle">{item.subtitle}</p>}
+              <Link className="btn btn-primary" to={item.link_url || '/press'}>
                 {t('sliderCta')}
               </Link>
             </div>

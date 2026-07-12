@@ -116,6 +116,21 @@ export interface UploadMediaResponse {
   document: string | null;
 }
 
+export interface HeroSlide {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  image_url: string | null;
+  video_url: string | null;
+  link_url: string | null;
+  sort_order: number;
+  is_active?: boolean;
+}
+
+export interface HeroSlidesResponse {
+  results: HeroSlide[];
+}
+
 export type PublicationCategory = 'annual_report' | 'circular' | 'stability_report';
 
 export interface Publication {

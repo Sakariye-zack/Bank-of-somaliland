@@ -6,13 +6,14 @@ import { NewsSlider } from '../components/NewsSlider';
 import { Reveal } from '../components/Reveal';
 import { useLanguage } from '../lib/LanguageContext';
 import { useT } from '../lib/i18n';
-import type { ExchangeRatesLatestResponse, PressReleasesResponse } from '@bos/shared-types';
+import type { ExchangeRatesLatestResponse, PressReleasesResponse, HeroSlide } from '@bos/shared-types';
 
 export function Home() {
   const { lang } = useLanguage();
   const t = useT();
   const [rates, setRates] = useState<ExchangeRatesLatestResponse | null>(null);
   const [press, setPress] = useState<PressReleasesResponse | null>(null);
+  const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const CURRENCY_LABELS: Record<string, string> = {
@@ -23,20 +24,20 @@ export function Home() {
   };
 
   useEffect(() => {
-    Promise.all([api.latestRates(), api.pressReleases(1, 6, lang)])
-      .then(([r, p]) => {
+    Promise.all([api.latestRates(), api.pressReleases(1, 6, lang), api.heroSlides(lang)])
+      .then(([r, p, s]) => {
         setRates(r);
         setPress(p);
+        setSlides(s.results);
       })
       .catch((e) => setError(e.message));
   }, [lang]);
 
-  const sliderItems = (press?.results ?? []).slice(0, 5);
   const recentItems = (press?.results ?? []).slice(0, 3);
 
   return (
     <>
-      {sliderItems.length > 0 && <NewsSlider items={sliderItems} />}
+      {slides.length > 0 && <NewsSlider items={slides} />}
 
       <section className="hero" style={{ padding: '56px 0 0' }}>
         <div className="wrap hero-grid">

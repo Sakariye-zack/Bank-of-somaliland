@@ -8,6 +8,7 @@ import { ContentEditor } from './pages/ContentEditor';
 import { PressReleasesAdmin } from './pages/PressReleasesAdmin';
 import { PublicationsAdmin } from './pages/PublicationsAdmin';
 import { NavigationAdmin } from './pages/NavigationAdmin';
+import { HeroSlidesAdmin } from './pages/HeroSlidesAdmin';
 import { ExchangeRates } from './pages/ExchangeRates';
 import { InstitutionsAdmin } from './pages/InstitutionsAdmin';
 import { Users } from './pages/Users';
@@ -55,6 +56,14 @@ function App() {
             element={
               <ProtectedRoute roles={['super_admin', 'content_editor']}>
                 <NavigationAdmin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/hero-slides"
+            element={
+              <ProtectedRoute roles={['super_admin', 'content_editor']}>
+                <HeroSlidesAdmin />
               </ProtectedRoute>
             }
           />

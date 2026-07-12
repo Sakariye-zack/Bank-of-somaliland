@@ -719,6 +719,136 @@ adminRouter.delete('/nav-items/:id', requireRole('content_editor', 'super_admin'
 });
 
 // ---------------------------------------------------------------------------
+// Hero slides (homepage slider) — content_editor, super_admin. Deliberately
+// independent of press_releases so the admin can curate the slider directly
+// (upload an image, hide/show a slide) without publishing an announcement.
+// ---------------------------------------------------------------------------
+adminRouter.get('/hero-slides', requireRole('content_editor', 'super_admin'), async (_req, res) => {
+  const { rows } = await pool.query(`SELECT * FROM hero_slides ORDER BY sort_order ASC`);
+  res.json({ results: rows });
+});
+
+const heroSlideSchema = z.object({
+  title: z.string().min(1).max(300),
+  title_so: z.string().max(300).optional(),
+  subtitle: z.string().max(300).optional(),
+  subtitle_so: z.string().max(300).optional(),
+  image_url: z.string().max(500).nullable().optional(),
+  video_url: z.string().max(500).nullable().optional(),
+  link_url: z.string().max(500).optional(),
+  sort_order: z.number().int().optional(),
+});
+
+adminRouter.post('/hero-slides', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const parsed = heroSlideSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Invalid hero slide payload.' } });
+  }
+  if (!parsed.data.image_url && !parsed.data.video_url) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'A hero slide needs an image or a video.' } });
+  }
+  const { title, title_so, subtitle, subtitle_so, image_url, video_url, link_url, sort_order } = parsed.data;
+
+  const { rows } = await pool.query(
+    `INSERT INTO hero_slides (title, title_so, subtitle, subtitle_so, image_url, video_url, link_url, sort_order, updated_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+    [
+      title,
+      title_so ?? null,
+      subtitle ?? null,
+      subtitle_so ?? null,
+      image_url ?? null,
+      video_url ?? null,
+      link_url ?? null,
+      sort_order ?? 0,
+      req.user!.sub,
+    ]
+  );
+
+  await writeAuditLog(req, {
+    action: 'create',
+    table_name: 'hero_slides',
+    record_id: rows[0].id,
+    before_value: null,
+    after_value: rows[0],
+  });
+
+  res.status(201).json(rows[0]);
+});
+
+const heroSlideUpdateSchema = z.object({
+  title: z.string().min(1).max(300).optional(),
+  title_so: z.string().max(300).nullable().optional(),
+  subtitle: z.string().max(300).nullable().optional(),
+  subtitle_so: z.string().max(300).nullable().optional(),
+  image_url: z.string().max(500).nullable().optional(),
+  video_url: z.string().max(500).nullable().optional(),
+  link_url: z.string().max(500).nullable().optional(),
+  sort_order: z.number().int().optional(),
+  is_active: z.boolean().optional(),
+});
+
+adminRouter.put('/hero-slides/:id', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const parsed = heroSlideUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Invalid hero slide payload.' } });
+  }
+
+  const beforeRes = await pool.query('SELECT * FROM hero_slides WHERE id = $1', [req.params.id]);
+  const before = beforeRes.rows[0];
+  if (!before) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Hero slide not found.' } });
+
+  const fields = parsed.data;
+  const sets: string[] = [];
+  const params: unknown[] = [];
+  for (const [key, value] of Object.entries(fields)) {
+    if (value === undefined) continue;
+    params.push(value);
+    sets.push(`${key} = $${params.length}`);
+  }
+  if (sets.length === 0) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'No fields to update.' } });
+  }
+  params.push(req.user!.sub);
+  sets.push(`updated_by = $${params.length}`);
+  sets.push('updated_at = now()');
+  params.push(req.params.id);
+
+  const { rows } = await pool.query(
+    `UPDATE hero_slides SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
+    params
+  );
+
+  await writeAuditLog(req, {
+    action: 'update',
+    table_name: 'hero_slides',
+    record_id: rows[0].id,
+    before_value: before,
+    after_value: rows[0],
+  });
+
+  res.json(rows[0]);
+});
+
+adminRouter.delete('/hero-slides/:id', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const beforeRes = await pool.query('SELECT * FROM hero_slides WHERE id = $1', [req.params.id]);
+  const before = beforeRes.rows[0];
+  if (!before) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Hero slide not found.' } });
+
+  await pool.query('DELETE FROM hero_slides WHERE id = $1', [req.params.id]);
+
+  await writeAuditLog(req, {
+    action: 'delete',
+    table_name: 'hero_slides',
+    record_id: req.params.id,
+    before_value: before,
+    after_value: null,
+  });
+
+  res.status(204).send();
+});
+
+// ---------------------------------------------------------------------------
 // Audit log — super_admin only
 // ---------------------------------------------------------------------------
 adminRouter.get('/audit-log', requireRole('super_admin'), async (req, res) => {

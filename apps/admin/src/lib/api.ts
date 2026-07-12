@@ -11,6 +11,7 @@ import type {
   Publication,
   LawRegulation,
   NavItem,
+  HeroSlide,
 } from '@bos/shared-types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/v1';
@@ -172,4 +173,27 @@ export const api = {
     payload: Partial<{ label: string; path: string; parent_id: string | null; sort_order: number; is_active: boolean }>
   ) => request<NavItem>(`/admin/nav-items/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
   deleteNavItem: (id: string) => request<void>(`/admin/nav-items/${id}`, { method: 'DELETE' }),
+
+  heroSlides: () => request<{ results: (HeroSlide & { is_active: boolean })[] }>('/admin/hero-slides'),
+  createHeroSlide: (payload: {
+    title: string;
+    subtitle?: string;
+    image_url?: string | null;
+    video_url?: string | null;
+    link_url?: string;
+    sort_order?: number;
+  }) => request<HeroSlide>('/admin/hero-slides', { method: 'POST', body: JSON.stringify(payload) }),
+  updateHeroSlide: (
+    id: string,
+    payload: Partial<{
+      title: string;
+      subtitle: string | null;
+      image_url: string | null;
+      video_url: string | null;
+      link_url: string | null;
+      sort_order: number;
+      is_active: boolean;
+    }>
+  ) => request<HeroSlide>(`/admin/hero-slides/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteHeroSlide: (id: string) => request<void>(`/admin/hero-slides/${id}`, { method: 'DELETE' }),
 };
