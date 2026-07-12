@@ -181,7 +181,7 @@ publicRouter.get('/institutions', async (req, res) => {
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const { rows } = await pool.query(
-    `SELECT id, name, institution_type, status, headquarters, license_number
+    `SELECT id, name, institution_type, status, headquarters, license_number, logo_url, website_url
      FROM licensed_institutions ${where} ORDER BY name ASC`,
     params
   );

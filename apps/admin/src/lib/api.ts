@@ -117,6 +117,8 @@ export const api = {
   }) => request('/admin/institutions', { method: 'POST', body: JSON.stringify(payload) }),
   updateInstitutionStatus: (id: string, status: 'active' | 'revoked') =>
     request(`/admin/institutions/${id}`, { method: 'PUT', body: JSON.stringify({ status }) }),
+  updateInstitutionBranding: (id: string, payload: { logo_url?: string | null; website_url?: string | null }) =>
+    request(`/admin/institutions/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
 
   users: () => request<{ results: AdminUser[] }>('/admin/users'),
   createUser: (payload: { name: string; email: string; password: string; role: string }) =>

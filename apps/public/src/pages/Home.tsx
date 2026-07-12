@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { mediaUrl } from '../lib/media';
 import { NewsSlider } from '../components/NewsSlider';
+import { InstitutionsMarquee } from '../components/InstitutionsMarquee';
 import { Reveal } from '../components/Reveal';
 import { useLanguage } from '../lib/LanguageContext';
 import { useT } from '../lib/i18n';
@@ -134,6 +135,10 @@ export function Home() {
             </div>
           </div>
         </section>
+      </Reveal>
+
+      <Reveal>
+        <InstitutionsMarquee />
       </Reveal>
     </>
   );

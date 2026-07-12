@@ -199,6 +199,8 @@ const institutionUpdateSchema = z.object({
   name: z.string().max(200).optional(),
   headquarters: z.string().max(120).optional(),
   license_number: z.string().max(50).optional(),
+  logo_url: z.string().max(500).nullable().optional(),
+  website_url: z.string().max(500).nullable().optional(),
 });
 
 adminRouter.put('/institutions/:id', requireRole('supervision_data_officer', 'super_admin'), async (req, res) => {

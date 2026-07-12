@@ -1099,3 +1099,90 @@ table.admin-table tbody tr {
 a {
   transition: color 0.18s ease;
 }
+
+/* Licensed institutions marquee */
+.marquee-section {
+  padding: 56px 0 64px;
+  background: var(--parchment-2);
+}
+.marquee-viewport {
+  overflow: hidden;
+  margin-top: 12px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 64px, #000 calc(100% - 64px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 64px, #000 calc(100% - 64px), transparent 100%);
+}
+.marquee-track {
+  display: flex;
+  gap: 16px;
+  width: max-content;
+  animation: marquee-scroll 38s linear infinite;
+}
+.marquee-viewport:hover .marquee-track {
+  animation-play-state: paused;
+}
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  padding: 8px 20px 8px 8px;
+  text-decoration: none;
+  color: var(--ink);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.marquee-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 22px rgba(11, 74, 42, 0.12);
+  border-color: var(--gold);
+}
+.marquee-item-static {
+  cursor: default;
+}
+.marquee-item-static:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--line);
+}
+.marquee-logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--parchment-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.marquee-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.marquee-logo-fallback {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--night);
+}
+.marquee-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}

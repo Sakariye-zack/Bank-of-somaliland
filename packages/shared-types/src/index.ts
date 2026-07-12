@@ -84,6 +84,8 @@ export interface Institution {
   headquarters: string | null;
   license_number: string | null;
   license_date?: string | null;
+  logo_url?: string | null;
+  website_url?: string | null;
 }
 
 export interface InstitutionsResponse {
