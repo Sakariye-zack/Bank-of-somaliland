@@ -39,21 +39,34 @@ export function Press() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {data?.results.map((item) => (
-              <article className="news-item" key={item.id} style={{ minWidth: 'auto' }}>
-                <div className="date">
-                  {item.publish_date} {item.featured && t('featured')}
+              <article className="news-item press-list-item" key={item.id} style={{ minWidth: 'auto' }}>
+                <div className="news-item-visual press-list-visual">
+                  {item.images.length > 0 ? (
+                    <img className="news-item-thumb" src={mediaUrl(item.images[0])} alt="" />
+                  ) : item.video_url ? (
+                    <>
+                      <video className="news-item-video" src={mediaUrl(item.video_url)} muted loop autoPlay playsInline />
+                      <div className="news-item-video-badge">▶</div>
+                    </>
+                  ) : (
+                    <div className="news-item-emblem">
+                      <img src="/logo.jpg" alt="" />
+                    </div>
+                  )}
                 </div>
-                <h4>{item.title}</h4>
-                {(item.images.length > 0 || item.video_url) && (
-                  <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                    {item.images.map((img) => (
-                      <img key={img} src={mediaUrl(img)} alt="" className="news-gallery-thumb" />
-                    ))}
-                    {item.video_url && (
-                      <video src={mediaUrl(item.video_url)} className="news-gallery-video" controls />
-                    )}
+                <div className="news-item-body press-list-body">
+                  <div className="date">
+                    {item.publish_date} {item.featured && t('featured')}
                   </div>
-                )}
+                  <h4>{item.title}</h4>
+                  {item.images.length > 1 && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                      {item.images.slice(1).map((img) => (
+                        <img key={img} src={mediaUrl(img)} alt="" className="news-gallery-thumb" />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </article>
             ))}
           </div>

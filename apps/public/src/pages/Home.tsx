@@ -103,11 +103,31 @@ export function Home() {
             <div className="news-strip">
               {recentItems.map((item) => (
                 <article className="news-item" key={item.id}>
-                  {item.images.length > 0 && (
-                    <img className="news-item-thumb" src={mediaUrl(item.images[0])} alt="" />
-                  )}
-                  <div className="date">{item.publish_date}</div>
-                  <h4>{item.title}</h4>
+                  <div className="news-item-visual">
+                    {item.images.length > 0 ? (
+                      <img className="news-item-thumb" src={mediaUrl(item.images[0])} alt="" />
+                    ) : item.video_url ? (
+                      <>
+                        <video
+                          className="news-item-video"
+                          src={mediaUrl(item.video_url)}
+                          muted
+                          loop
+                          autoPlay
+                          playsInline
+                        />
+                        <div className="news-item-video-badge">▶</div>
+                      </>
+                    ) : (
+                      <div className="news-item-emblem">
+                        <img src="/logo.jpg" alt="" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="news-item-body">
+                    <div className="date">{item.publish_date}</div>
+                    <h4>{item.title}</h4>
+                  </div>
                 </article>
               ))}
             </div>
