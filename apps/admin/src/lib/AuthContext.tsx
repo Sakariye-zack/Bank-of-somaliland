@@ -5,8 +5,9 @@ import { api, setAccessToken } from './api';
 interface AuthState {
   user: AdminUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, totp_code?: string) => Promise<{ requires_totp?: boolean }>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -28,10 +29,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  async function login(email: string, password: string) {
-    const res = await api.login(email, password);
-    setAccessToken(res.access_token);
-    setUser(res.user);
+  async function login(email: string, password: string, totp_code?: string) {
+    const res = await api.login(email, password, totp_code);
+    if (res.requires_totp) return { requires_totp: true };
+    setAccessToken(res.access_token ?? null);
+    if (res.user) setUser(res.user);
+    return {};
   }
 
   async function logout() {
@@ -40,7 +43,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
-  return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;
+  async function refreshUser() {
+    const me = await api.me();
+    setUser({ id: me.sub, email: me.email, role: me.role as AdminUser['role'], name: me.email, is_active: true });
+  }
+
+  return <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

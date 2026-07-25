@@ -12,6 +12,7 @@ export interface AdminUser {
   email: string;
   role: AdminRole;
   is_active: boolean;
+  totp_enabled?: boolean;
 }
 
 export interface JwtPayload {
@@ -37,17 +38,38 @@ export interface ContentResponse {
   language_served: LanguageCode;
   fallback_used: boolean;
   title: string | null;
+  subtitle: string | null;
   body: string | null;
   updated_at: string;
+  animation_style?: string | null;
+  banner_image_url?: string | null;
+  banner_video_url?: string | null;
 }
 
 export type Trend = 'up' | 'down' | 'flat';
 
 export interface ExchangeRateLatest {
+  id: string;
   currency_code: string;
+  currency_name?: string;
+  flag_url?: string | null;
+  buying_rate: string;
+  selling_rate: string;
   rate_to_ssh: string;
+  spread?: string;
+  spread_pct?: string;
   trend: Trend;
   change_pct: string;
+}
+
+export interface Currency {
+  code: string;
+  name: string;
+  name_so?: string | null;
+  name_ar?: string | null;
+  flag_url?: string | null;
+  sort_order: number;
+  is_active: boolean;
 }
 
 export interface ExchangeRatesLatestResponse {
@@ -58,6 +80,8 @@ export interface ExchangeRatesLatestResponse {
 export interface ExchangeRateHistoryPoint {
   rate_date: string;
   rate_to_ssh: string;
+  buying_rate: string;
+  selling_rate: string;
 }
 
 export interface ExchangeRatesHistoryResponse {
@@ -133,7 +157,54 @@ export interface HeroSlidesResponse {
   results: HeroSlide[];
 }
 
-export type PublicationCategory = 'annual_report' | 'circular' | 'stability_report';
+export interface BankBranch {
+  id: string;
+  name: string;
+  city: string;
+  address: string | null;
+  phone: string | null;
+  is_headquarters: boolean;
+  sort_order: number;
+  is_active?: boolean;
+  manager_name?: string | null;
+  manager_title?: string | null;
+  email?: string | null;
+  photo_url?: string | null;
+}
+
+export interface BankBranchesResponse {
+  results: BankBranch[];
+}
+
+export interface Faq {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+export interface FaqsResponse {
+  results: Faq[];
+}
+
+export interface NewsletterSubscribeResponse {
+  subscribed: boolean;
+}
+
+export interface StatisticsResponse {
+  institutions_by_type: { institution_type: string; count: number }[];
+  publications_by_category: { category: string; count: number }[];
+  press_releases_by_year: { year: number; count: number }[];
+  active_currencies: number;
+}
+
+export type PublicationCategory = string;
+
+export interface PublicationCategoryOption {
+  slug: string;
+  name: string;
+  name_so?: string | null;
+  name_ar?: string | null;
+}
 
 export interface Publication {
   id: string;
@@ -141,11 +212,30 @@ export interface Publication {
   category: PublicationCategory;
   file_url: string;
   publish_date: string;
+  thumbnail_url?: string | null;
+  is_downloadable?: boolean;
+  status?: 'draft' | 'published';
   fallback_used?: boolean;
 }
 
 export interface PublicationsResponse {
   results: Publication[];
+}
+
+export interface SiteSettings {
+  site_name: string;
+  logo_url: string | null;
+  watermark_url: string | null;
+  phone: string | null;
+  email: string | null;
+  social_x: string | null;
+  social_facebook: string | null;
+  social_youtube: string | null;
+  social_linkedin: string | null;
+  country_label_en?: string;
+  country_label_so?: string;
+  show_country_label?: boolean;
+  country_flag_url?: string | null;
 }
 
 export interface LawRegulation {
@@ -154,6 +244,9 @@ export interface LawRegulation {
   file_url: string;
   law_number: string | null;
   effective_date: string | null;
+  thumbnail_url?: string | null;
+  is_downloadable?: boolean;
+  status?: 'draft' | 'published';
   fallback_used?: boolean;
 }
 
@@ -196,11 +289,15 @@ export interface ContentPageSummary {
   status: 'draft' | 'published';
   updated_at: string;
   languages: LanguageCode[];
+  banner_image_url?: string | null;
+  banner_video_url?: string | null;
+  animation_style?: string | null;
 }
 
 export interface ContentPageTranslation {
   language_code: LanguageCode;
   title: string | null;
+  subtitle: string | null;
   body: string | null;
 }
 
@@ -235,4 +332,62 @@ export interface NavItem {
 
 export interface NavItemsResponse {
   results: NavItem[];
+}
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface ContactMessagesResponse {
+  results: ContactMessage[];
+  unread_count: number;
+}
+
+export interface JobPosting {
+  id: string;
+  title: string;
+  department: string | null;
+  closing_date: string;
+  status: 'open' | 'closed';
+  fallback_used?: boolean;
+  language_served?: LanguageCode;
+}
+
+export interface JobPostingsResponse {
+  results: JobPosting[];
+}
+
+export interface Tender {
+  id: string;
+  title: string;
+  reference_number: string;
+  closing_date: string;
+  file_url: string | null;
+  fallback_used?: boolean;
+  language_served?: LanguageCode;
+}
+
+export interface TendersResponse {
+  results: Tender[];
+}
+
+export type SearchResultType = 'page' | 'press' | 'publication' | 'law';
+
+export interface SearchResult {
+  type: SearchResultType;
+  title: string | null;
+  snippet: string | null;
+  url: string;
+  date: string | null;
+}
+
+export interface SearchResponse {
+  query: string;
+  results: SearchResult[];
 }

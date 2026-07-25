@@ -7,8 +7,10 @@ const ROLES = ['super_admin', 'content_editor', 'supervision_data_officer', 'exc
 export function Users() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'content_editor' });
   const [submitting, setSubmitting] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   function load() {
     api
@@ -18,6 +20,37 @@ export function Users() {
   }
 
   useEffect(load, []);
+
+  async function handleResetPassword(user: AdminUser) {
+    if (!confirm(`Send a password reset link to ${user.email}?`)) return;
+    setBusyId(user.id);
+    setMessage(null);
+    setError(null);
+    try {
+      await api.adminResetUserPassword(user.id);
+      setMessage(`Password reset link sent to ${user.email}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to trigger reset.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleReset2fa(user: AdminUser) {
+    if (!confirm(`Disable 2FA for ${user.email}? They will be able to sign in with just their password until they set it up again.`)) return;
+    setBusyId(user.id);
+    setMessage(null);
+    setError(null);
+    try {
+      await api.adminReset2fa(user.id);
+      setMessage(`2FA disabled for ${user.email}.`);
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reset 2FA.');
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
@@ -78,6 +111,7 @@ export function Users() {
 
       <div className="card">
         <h3 style={{ marginTop: 0, fontFamily: 'var(--font-display)' }}>All Admin Users</h3>
+        {message && <div className="status-ok">{message}</div>}
         <table className="admin-table">
           <thead>
             <tr>
@@ -85,6 +119,8 @@ export function Users() {
               <th>Email</th>
               <th>Role</th>
               <th>Status</th>
+              <th>2FA</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -94,6 +130,17 @@ export function Users() {
                 <td>{u.email}</td>
                 <td>{u.role.replace(/_/g, ' ')}</td>
                 <td>{u.is_active ? 'Active' : 'Disabled'}</td>
+                <td>{u.totp_enabled ? '✓ On' : '—'}</td>
+                <td style={{ display: 'flex', gap: 6 }}>
+                  <button className="btn" style={{ padding: '4px 10px', fontSize: 12 }} disabled={busyId === u.id} onClick={() => handleResetPassword(u)}>
+                    Reset password
+                  </button>
+                  {u.totp_enabled && (
+                    <button className="btn btn-danger" style={{ padding: '4px 10px', fontSize: 12 }} disabled={busyId === u.id} onClick={() => handleReset2fa(u)}>
+                      Reset 2FA
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

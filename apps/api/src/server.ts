@@ -41,6 +41,59 @@ app.get('/v1/health', async (_req, res) => {
   res.json({ status: 'ok' });
 });
 
+function escapeXml(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+app.get('/rss.xml', async (_req, res) => {
+  const siteUrl = process.env.PUBLIC_SITE_URL || publicOrigin;
+  const settingsRes = await pool.query('SELECT site_name FROM site_settings WHERE id = 1');
+  const siteName = settingsRes.rows[0]?.site_name || 'Bank of Somaliland';
+
+  const { rows } = await pool.query(
+    `SELECT pr.id, pr.publish_date, ct.title, ct.body
+     FROM press_releases pr
+     JOIN content_translations ct ON ct.content_id = pr.content_id AND ct.content_table = 'press_releases' AND ct.language_code = 'en'
+     WHERE pr.status = 'published'
+     ORDER BY pr.publish_date DESC
+     LIMIT 30`
+  );
+
+  const items = rows
+    .map((r) => {
+      const plain = (r.body || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 400);
+      const link = `${siteUrl}/press`;
+      const pubDate = new Date(r.publish_date).toUTCString();
+      return `  <item>
+    <title>${escapeXml(r.title || '(untitled)')}</title>
+    <link>${escapeXml(link)}</link>
+    <guid isPermaLink="false">${r.id}</guid>
+    <pubDate>${pubDate}</pubDate>
+    <description>${escapeXml(plain)}</description>
+  </item>`;
+    })
+    .join('\n');
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+  <title>${escapeXml(siteName)} — Press Releases</title>
+  <link>${escapeXml(siteUrl)}</link>
+  <description>Official press releases from the ${escapeXml(siteName)}.</description>
+  <language>en</language>
+${items}
+</channel>
+</rss>`;
+
+  res.setHeader('Content-Type', 'application/rss+xml; charset=utf-8');
+  res.send(xml);
+});
+
 app.use('/v1/auth', authLimiter, authRouter);
 app.use('/v1/contact', contactLimiter);
 app.use('/v1', publicRouter);
@@ -63,4 +116,12 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 const port = Number(process.env.PORT || 4000);
 app.listen(port, () => {
   console.log(`Bank of Somaliland API listening on http://localhost:${port}`);
+});
+
+// Route handlers here are async and don't all wrap their DB calls in
+// try/catch — since Node 15, an unhandled rejection terminates the process
+// by default, so a single bad request (e.g. a malformed query) would take
+// the whole site down for every user. Log and stay up instead.
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled rejection (request likely failed, server staying up):', reason);
 });

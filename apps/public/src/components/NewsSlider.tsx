@@ -11,6 +11,18 @@ export function NewsSlider({ items }: { items: HeroSlide[] }) {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [slideWidth, setSlideWidth] = useState(0);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const update = () => setSlideWidth(el.clientWidth);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const goTo = useCallback(
     (index: number) => {
@@ -39,7 +51,7 @@ export function NewsSlider({ items }: { items: HeroSlide[] }) {
       aria-roledescription="carousel"
       aria-label={t('sliderEyebrow')}
     >
-      <div className="news-slider-track" style={{ transform: `translateX(-${active * 100}%)` }}>
+      <div ref={trackRef} className="news-slider-track" style={{ transform: `translateX(-${active * slideWidth}px)` }}>
         {items.map((item, i) => (
           <div className={`news-slide${i === active ? ' is-active' : ''}`} key={item.id} aria-hidden={i !== active}>
             {item.image_url ? (
@@ -55,9 +67,14 @@ export function NewsSlider({ items }: { items: HeroSlide[] }) {
               <div className="news-slide-eyebrow">{t('sliderEyebrow')}</div>
               <h2 className="news-slide-title">{item.title}</h2>
               {item.subtitle && <p className="news-slide-subtitle">{item.subtitle}</p>}
-              <Link className="btn btn-primary" to={item.link_url || '/press'}>
-                {t('sliderCta')}
-              </Link>
+              <div className="news-slide-actions">
+                <Link className="btn btn-primary" to={item.link_url || '/press'}>
+                  {t('sliderCta')}
+                </Link>
+                <Link className="btn btn-ghost-light" to="/institutions">
+                  {t('verifyInstitution')}
+                </Link>
+              </div>
             </div>
           </div>
         ))}

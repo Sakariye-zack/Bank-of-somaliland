@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { mediaUrl } from '../lib/media';
 import { Reveal } from '../components/Reveal';
@@ -39,7 +40,7 @@ export function Press() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {data?.results.map((item) => (
-              <article className="news-item press-list-item" key={item.id} style={{ minWidth: 'auto' }}>
+              <Link className="news-item press-list-item" to={`/press/${item.id}`} key={item.id} style={{ minWidth: 'auto' }}>
                 <div className="news-item-visual press-list-visual">
                   {item.images.length > 0 ? (
                     <img className="news-item-thumb" src={mediaUrl(item.images[0])} alt="" />
@@ -66,8 +67,9 @@ export function Press() {
                       ))}
                     </div>
                   )}
+                  <span className="news-item-more">{t('readMore')} →</span>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
 

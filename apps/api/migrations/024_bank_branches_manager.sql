@@ -1,0 +1,8 @@
+ALTER TABLE bank_branches ADD COLUMN IF NOT EXISTS manager_name VARCHAR(150);
+ALTER TABLE bank_branches ADD COLUMN IF NOT EXISTS manager_name_so VARCHAR(150);
+ALTER TABLE bank_branches ADD COLUMN IF NOT EXISTS manager_name_ar VARCHAR(150);
+ALTER TABLE bank_branches ADD COLUMN IF NOT EXISTS manager_title VARCHAR(150);
+ALTER TABLE bank_branches ADD COLUMN IF NOT EXISTS manager_title_so VARCHAR(150);
+ALTER TABLE bank_branches ADD COLUMN IF NOT EXISTS manager_title_ar VARCHAR(150);
+ALTER TABLE bank_branches ADD COLUMN IF NOT EXISTS email VARCHAR(150);
+ALTER TABLE bank_branches ADD COLUMN IF NOT EXISTS photo_url VARCHAR(500);

@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { mediaUrl } from '../lib/media';
+import { initials } from '../lib/institutions';
+import { PinIcon, GlobeIcon } from '../components/Icons';
 import { useT } from '../lib/i18n';
 import { Reveal } from '../components/Reveal';
 import type { Institution, InstitutionType } from '@bos/shared-types';
@@ -69,36 +72,52 @@ export function Institutions() {
             {error && <div className="status-error">{error}</div>}
             {!results && !error && <div className="status-loading">{t('loadingInstitutions')}</div>}
             {results?.length === 0 && <div className="status-loading">{t('noInstitutionsMatch')}</div>}
-
-            {results && results.length > 0 && (
-              <table className="inst-table">
-                <thead>
-                  <tr>
-                    <th>{t('colName')}</th>
-                    <th>{t('colType')}</th>
-                    <th>{t('colHeadquarters')}</th>
-                    <th>{t('colLicenseNo')}</th>
-                    <th>{t('colStatus')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {results.map((inst) => (
-                    <tr key={inst.id}>
-                      <td>{inst.name}</td>
-                      <td>{TYPE_LABELS[inst.institution_type]}</td>
-                      <td>{inst.headquarters ?? '—'}</td>
-                      <td>{inst.license_number ?? '—'}</td>
-                      <td>
-                        <span className={`status-pill status-${inst.status}`}>
-                          {inst.status === 'active' ? t('statusActive') : t('statusRevoked')}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
           </div>
+
+          {results && results.length > 0 && (
+            <div className="pub-grid" style={{ marginTop: 24 }}>
+              {results.map((inst) => (
+                <div className="pub-card inst-card" key={inst.id}>
+                  <div className="pub-thumb inst-card-thumb">
+                    <span className="tag">{TYPE_LABELS[inst.institution_type]}</span>
+                    <div className="inst-card-logo">
+                      {inst.logo_url ? (
+                        <img src={mediaUrl(inst.logo_url)} alt="" />
+                      ) : (
+                        <span className="inst-card-logo-fallback">{initials(inst.name)}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="pub-body">
+                    <h4>{inst.name}</h4>
+                    {inst.headquarters && (
+                      <div className="inst-card-row">
+                        <PinIcon />
+                        <span>{inst.headquarters}</span>
+                      </div>
+                    )}
+                    {inst.license_number && (
+                      <div className="inst-card-row">
+                        <span className="inst-card-row-label">{t('colLicenseNo')}:</span>
+                        <span>{inst.license_number}</span>
+                      </div>
+                    )}
+                    <div className="inst-card-footer">
+                      <span className={`status-pill status-${inst.status}`}>
+                        {inst.status === 'active' ? t('statusActive') : t('statusRevoked')}
+                      </span>
+                      {inst.website_url && (
+                        <a className="inst-card-link" href={inst.website_url} target="_blank" rel="noreferrer">
+                          <GlobeIcon />
+                          {t('visitWebsite')}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </Reveal>
     </section>

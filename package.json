@@ -11,5 +11,9 @@
     "dev:admin": "npm run dev -w apps/admin",
     "migrate": "npm run migrate -w apps/api",
     "seed": "npm run seed -w apps/api"
+  },
+  "overrides": {
+    "@tiptap/core": "3.27.4",
+    "@tiptap/pm": "3.27.4"
   }
 }

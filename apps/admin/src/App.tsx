@@ -3,22 +3,34 @@ import { AuthProvider } from './lib/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Shell } from './components/Shell';
 import { Login } from './pages/Login';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
+import { MyAccount } from './pages/MyAccount';
+import { SiteSettingsAdmin } from './pages/SiteSettingsAdmin';
 import { Dashboard } from './pages/Dashboard';
 import { ContentEditor } from './pages/ContentEditor';
 import { PressReleasesAdmin } from './pages/PressReleasesAdmin';
 import { PublicationsAdmin } from './pages/PublicationsAdmin';
 import { NavigationAdmin } from './pages/NavigationAdmin';
 import { HeroSlidesAdmin } from './pages/HeroSlidesAdmin';
+import { BankBranchesAdmin } from './pages/BankBranchesAdmin';
 import { ExchangeRates } from './pages/ExchangeRates';
 import { InstitutionsAdmin } from './pages/InstitutionsAdmin';
 import { Users } from './pages/Users';
 import { AuditLog } from './pages/AuditLog';
+import { CareersAdmin } from './pages/CareersAdmin';
+import { TendersAdmin } from './pages/TendersAdmin';
+import { ContactMessagesAdmin } from './pages/ContactMessagesAdmin';
+import { FaqsAdmin } from './pages/FaqsAdmin';
+import { NewsletterAdmin } from './pages/NewsletterAdmin';
 
 function App() {
   return (
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route
           element={
             <ProtectedRoute>
@@ -27,6 +39,15 @@ function App() {
           }
         >
           <Route path="/" element={<Dashboard />} />
+          <Route path="/my-account" element={<MyAccount />} />
+          <Route
+            path="/site-settings"
+            element={
+              <ProtectedRoute roles={['super_admin']}>
+                <SiteSettingsAdmin />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/content"
             element={
@@ -64,6 +85,54 @@ function App() {
             element={
               <ProtectedRoute roles={['super_admin', 'content_editor']}>
                 <HeroSlidesAdmin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bank-branches"
+            element={
+              <ProtectedRoute roles={['super_admin', 'content_editor']}>
+                <BankBranchesAdmin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/careers"
+            element={
+              <ProtectedRoute roles={['super_admin', 'content_editor']}>
+                <CareersAdmin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tenders"
+            element={
+              <ProtectedRoute roles={['super_admin', 'content_editor']}>
+                <TendersAdmin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/contact-messages"
+            element={
+              <ProtectedRoute roles={['super_admin', 'content_editor']}>
+                <ContactMessagesAdmin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/faqs"
+            element={
+              <ProtectedRoute roles={['super_admin', 'content_editor']}>
+                <FaqsAdmin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/newsletter"
+            element={
+              <ProtectedRoute roles={['super_admin', 'content_editor']}>
+                <NewsletterAdmin />
               </ProtectedRoute>
             }
           />

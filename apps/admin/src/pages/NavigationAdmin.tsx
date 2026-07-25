@@ -7,13 +7,24 @@ type FlatNavItem = NavItem & { parent_id: string | null; is_active: boolean };
 const KNOWN_PATHS = [
   { value: '/', label: 'Home' },
   { value: '/about', label: 'About the Bank' },
-  { value: '/governance', label: 'Governance' },
-  { value: '/core-functions', label: 'Core Functions' },
+  { value: '/about/overview', label: 'BoSL Overview' },
+  { value: '/about/governors-statement', label: "Governor's Statement" },
+  { value: '/about/history', label: 'History' },
+  { value: '/governance', label: 'Governance / Board of Directors' },
+  { value: '/about/senior-management', label: 'Senior Management' },
+  { value: '/about/office-of-the-governor', label: 'Office of the Governor' },
+  { value: '/about/structure', label: 'BoSL Structure' },
+  { value: '/core-functions', label: 'Core Functions (overview)' },
+  { value: '/functions/currency-banking-operations', label: 'Currency & Banking Operations Group' },
+  { value: '/functions/monetary-financial-regulatory-policy', label: 'Monetary, Financial & Regulatory Policy Group' },
+  { value: '/functions/payment-systems-nps', label: 'Payment Systems (NPS)' },
+  { value: '/functions/financial-admin-support', label: 'Financial Administrative & Support Services Group' },
   { value: '/institutions', label: 'Licensed Institutions' },
   { value: '/publications', label: 'Publications' },
   { value: '/laws', label: 'Laws & Regulations' },
-  { value: '/press', label: 'Press Releases' },
-  { value: '/careers', label: 'Careers & Tenders' },
+  { value: '/press', label: 'Press Releases / News' },
+  { value: '/careers', label: 'Careers & Tenders / Vacancy' },
+  { value: '/opportunities/training', label: 'Training' },
   { value: '/contact', label: 'Contact' },
   { value: '#', label: '(Dropdown header — no link)' },
   { value: 'custom', label: 'Custom URL…' },
@@ -45,6 +56,21 @@ export function NavigationAdmin() {
   const topLevel = items.filter((i) => !i.parent_id);
   const childrenOf = (id: string) => items.filter((i) => i.parent_id === id);
 
+  // Flattened, indented list of every item — used so a new item can be nested
+  // under a dropdown header OR under one of that header's own children (3 levels deep).
+  function buildSelectOptions(): { item: FlatNavItem; depth: number }[] {
+    const out: { item: FlatNavItem; depth: number }[] = [];
+    function walk(parentId: string | null, depth: number) {
+      for (const item of items.filter((i) => i.parent_id === parentId)) {
+        out.push({ item, depth });
+        walk(item.id, depth + 1);
+      }
+    }
+    walk(null, 0);
+    return out;
+  }
+  const selectableParents = buildSelectOptions();
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
@@ -75,9 +101,45 @@ export function NavigationAdmin() {
   }
 
   async function removeItem(item: FlatNavItem) {
-    if (!confirm(`Remove "${item.label}" from the navigation bar?`)) return;
+    const hasKids = childrenOf(item.id).length > 0;
+    const warning = hasKids
+      ? `"${item.label}" has sub-items under it. Remove it and everything nested inside it?`
+      : `Remove "${item.label}" from the navigation bar?`;
+    if (!confirm(warning)) return;
     await api.deleteNavItem(item.id);
     load();
+  }
+
+  function NavRow({ item, depth }: { item: FlatNavItem; depth: number }) {
+    const kids = childrenOf(item.id);
+    return (
+      <Fragment>
+        <tr>
+          <td style={{ paddingLeft: 12 + depth * 20, fontWeight: depth === 0 ? 600 : 400 }}>
+            {depth > 0 && '↳ '}
+            {item.label}
+          </td>
+          <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{item.path}</td>
+          <td>{item.sort_order}</td>
+          <td>
+            <span className={`status-pill ${item.is_active ? 'status-active' : 'status-revoked'}`}>
+              {item.is_active ? 'active' : 'hidden'}
+            </span>
+          </td>
+          <td style={{ display: 'flex', gap: 6 }}>
+            <button className="btn btn-primary" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => toggleActive(item)}>
+              {item.is_active ? 'Hide' : 'Show'}
+            </button>
+            <button className="btn btn-danger" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => removeItem(item)}>
+              Delete
+            </button>
+          </td>
+        </tr>
+        {kids.map((child) => (
+          <NavRow key={child.id} item={child} depth={depth + 1} />
+        ))}
+      </Fragment>
+    );
   }
 
   return (
@@ -85,7 +147,8 @@ export function NavigationAdmin() {
       <h1>Navigation Bar</h1>
       <div className="card">
         <p style={{ marginTop: 0, fontSize: 13, color: 'var(--bronze)' }}>
-          Changes here update the public site's header navigation immediately — no code deploy needed.
+          Changes here update the public site's header navigation immediately — no code deploy needed. Items can be
+          nested up to three levels deep (e.g. BoSL Functions → Core Functions → Currency &amp; Banking Operations Group).
         </p>
         {message && <div className="status-ok">{message}</div>}
         {error && <div className="status-error">{error}</div>}
@@ -120,15 +183,20 @@ export function NavigationAdmin() {
             </div>
           )}
           <div className="form-row">
-            <label>Group under (optional — makes this a dropdown item)</label>
+            <label>Group under (optional — makes this a dropdown/flyout item)</label>
             <select value={form.parent_id} onChange={(e) => setForm({ ...form, parent_id: e.target.value })}>
               <option value="">— Top-level item —</option>
-              {topLevel.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
+              {selectableParents.map(({ item, depth }) => (
+                <option key={item.id} value={item.id}>
+                  {'—'.repeat(depth)} {item.label}
                 </option>
               ))}
             </select>
+            <p style={{ fontSize: 12, color: 'var(--bronze)', marginTop: 4 }}>
+              Picking a top-level item nests this one level deep (a dropdown link). Picking an item that is itself
+              already nested creates a third level (a flyout submenu) — that's how "BoSL Functions → Core Functions"
+              works.
+            </p>
           </div>
           <div className="form-row">
             <label>Order (lower numbers appear first)</label>
@@ -158,46 +226,7 @@ export function NavigationAdmin() {
           </thead>
           <tbody>
             {topLevel.map((item) => (
-              <Fragment key={item.id}>
-                <tr>
-                  <td style={{ fontWeight: 600 }}>{item.label}</td>
-                  <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{item.path}</td>
-                  <td>{item.sort_order}</td>
-                  <td>
-                    <span className={`status-pill ${item.is_active ? 'status-active' : 'status-revoked'}`}>
-                      {item.is_active ? 'active' : 'hidden'}
-                    </span>
-                  </td>
-                  <td style={{ display: 'flex', gap: 6 }}>
-                    <button className="btn btn-primary" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => toggleActive(item)}>
-                      {item.is_active ? 'Hide' : 'Show'}
-                    </button>
-                    <button className="btn btn-danger" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => removeItem(item)}>
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-                {childrenOf(item.id).map((child) => (
-                  <tr key={child.id}>
-                    <td style={{ paddingLeft: 28 }}>↳ {child.label}</td>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{child.path}</td>
-                    <td>{child.sort_order}</td>
-                    <td>
-                      <span className={`status-pill ${child.is_active ? 'status-active' : 'status-revoked'}`}>
-                        {child.is_active ? 'active' : 'hidden'}
-                      </span>
-                    </td>
-                    <td style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn btn-primary" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => toggleActive(child)}>
-                        {child.is_active ? 'Hide' : 'Show'}
-                      </button>
-                      <button className="btn btn-danger" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => removeItem(child)}>
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </Fragment>
+              <NavRow key={item.id} item={item} depth={0} />
             ))}
           </tbody>
         </table>
