@@ -1,0 +1,73 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bos_app
+      POSTGRES_PASSWORD: bos_dev_password
+      POSTGRES_DB: bank_of_somaliland
+    volumes:
+      - bos_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bos_app -d bank_of_somaliland"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://bos_app:bos_dev_password@db:5432/bank_of_somaliland
+      NODE_ENV: production
+      PORT: 4000
+      JWT_ACCESS_SECRET: bos-super-secret-access-token-key-2026
+      JWT_REFRESH_SECRET: bos-super-secret-refresh-token-key-2026
+      CORS_ORIGIN_PUBLIC: https://bankofsomaliland.com
+      CORS_ORIGIN_ADMIN: https://admin.bankofsomaliland.com
+    volumes:
+      # Uploaded images/videos/documents must survive image rebuilds — without
+      # this, every `docker compose build` wipes anything admins have uploaded.
+      - bos_uploads:/app/apps/api/dist/apps/api/uploads
+
+  public:
+    build:
+      context: .
+      dockerfile: apps/public/Dockerfile
+      args:
+        VITE_API_BASE_URL: https://api.bankofsomaliland.com/v1
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      args:
+        VITE_API_BASE_URL: https://api.bankofsomaliland.com/v1
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - public
+      - admin
+
+volumes:
+  bos_db_data:
+  bos_uploads:
+  caddy_data:
+  caddy_config:

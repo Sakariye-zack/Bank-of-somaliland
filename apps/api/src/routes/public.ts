@@ -192,7 +192,8 @@ publicRouter.get('/site-settings', async (_req, res) => {
   const { rows } = await pool.query(
     `SELECT site_name, logo_url, watermark_url, phone, email,
             social_x, social_facebook, social_youtube, social_linkedin,
-            country_label_en, country_label_so, show_country_label, country_flag_url
+            country_label_en, country_label_so, show_country_label, country_flag_url,
+            tagline_en, tagline_so, tagline_ar
      FROM site_settings WHERE id = 1`
   );
   res.json(rows[0]);

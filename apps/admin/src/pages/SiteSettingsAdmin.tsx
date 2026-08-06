@@ -70,6 +70,31 @@ export function SiteSettingsAdmin() {
             <input required value={form.site_name} onChange={(e) => setForm({ ...form, site_name: e.target.value })} />
           </div>
           <div className="form-row">
+            <label>Tagline (shown under the site name in the header — English)</label>
+            <input
+              value={form.tagline_en ?? ''}
+              onChange={(e) => setForm({ ...form, tagline_en: e.target.value })}
+              placeholder="Central Monetary Authority"
+            />
+          </div>
+          <div className="form-row">
+            <label>Tagline (Somali)</label>
+            <input
+              value={form.tagline_so ?? ''}
+              onChange={(e) => setForm({ ...form, tagline_so: e.target.value })}
+              placeholder="Maamulaha Dhexe ee Lacagta"
+            />
+          </div>
+          <div className="form-row">
+            <label>Tagline (Arabic)</label>
+            <input
+              dir="rtl"
+              value={form.tagline_ar ?? ''}
+              onChange={(e) => setForm({ ...form, tagline_ar: e.target.value })}
+              placeholder="السلطة النقدية المركزية"
+            />
+          </div>
+          <div className="form-row">
             <label>Logo</label>
             {form.logo_url && (
               <img src={mediaUrl(form.logo_url)} alt="Current logo" style={{ width: 60, height: 60, objectFit: 'contain', marginBottom: 8 }} />

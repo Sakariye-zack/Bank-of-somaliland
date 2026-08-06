@@ -825,6 +825,57 @@ adminRouter.put('/users/:id', requireRole('super_admin'), async (req, res) => {
   res.json(rows[0]);
 });
 
+adminRouter.delete('/users/:id', requireRole('super_admin'), async (req, res) => {
+  if (req.params.id === req.user!.sub) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'You cannot delete your own account.' } });
+  }
+
+  const beforeRes = await pool.query('SELECT id, name, email, role, is_active FROM admin_users WHERE id = $1', [req.params.id]);
+  const before = beforeRes.rows[0];
+  if (!before) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found.' } });
+
+  if (before.role === 'super_admin') {
+    const { rows } = await pool.query(
+      `SELECT count(*)::int AS n FROM admin_users WHERE role = 'super_admin' AND is_active = true AND id != $1`,
+      [req.params.id]
+    );
+    if (rows[0].n === 0) {
+      return res.status(400).json({
+        error: { code: 'LAST_SUPER_ADMIN', message: 'Cannot delete the only remaining active super admin.' },
+      });
+    }
+  }
+
+  try {
+    await pool.query('DELETE FROM admin_users WHERE id = $1', [req.params.id]);
+  } catch (err) {
+    // FK violation (23503) — this user has attributed history (audit log entries,
+    // entered exchange rates, content edits, etc.) that a hard delete would orphan.
+    // Deactivating preserves that trail; only accounts with no history can be
+    // truly deleted.
+    if ((err as { code?: string }).code === '23503') {
+      return res.status(409).json({
+        error: {
+          code: 'HAS_HISTORY',
+          message:
+            'This user has activity on record (audit log, exchange rates, or edits) and cannot be deleted — deactivate the account instead to preserve that history.',
+        },
+      });
+    }
+    throw err;
+  }
+
+  await writeAuditLog(req, {
+    action: 'delete',
+    table_name: 'admin_users',
+    record_id: before.id,
+    before_value: before,
+    after_value: null,
+  });
+
+  res.json({ status: 'deleted' });
+});
+
 // ---------------------------------------------------------------------------
 // Self-service account security — any authenticated role, acting on their
 // own account only (req.user.sub, never a body-supplied id).
@@ -1400,6 +1451,9 @@ const siteSettingsSchema = z.object({
   country_label_so: z.string().max(150).optional(),
   show_country_label: z.boolean().optional(),
   country_flag_url: z.string().max(500).nullable().optional(),
+  tagline_en: z.string().max(150).optional(),
+  tagline_so: z.string().max(150).optional(),
+  tagline_ar: z.string().max(150).optional(),
 });
 
 adminRouter.put('/site-settings', requireRole('super_admin'), async (req, res) => {

@@ -227,7 +227,10 @@ export function Header() {
             <img className="brand-mark-img" src={settings?.logo_url ? mediaUrl(settings.logo_url) : '/logo.jpg'} alt={t('bankEmblem')} />
             <div className="brand-text">
               <div className="t1">{settings?.site_name || t('bankName')}</div>
-              <div className="t2">{t('centralMonetaryAuthority')}</div>
+              <div className="t2">
+                {(lang === 'so' ? settings?.tagline_so : lang === 'ar' ? settings?.tagline_ar : settings?.tagline_en) ||
+                  t('centralMonetaryAuthority')}
+              </div>
             </div>
           </Link>
 

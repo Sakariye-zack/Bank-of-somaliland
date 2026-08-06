@@ -186,6 +186,7 @@ export const api = {
   users: () => request<{ results: AdminUser[] }>('/admin/users'),
   createUser: (payload: { name: string; email: string; password: string; role: string }) =>
     request('/admin/users', { method: 'POST', body: JSON.stringify(payload) }),
+  deleteUser: (id: string) => request(`/admin/users/${id}`, { method: 'DELETE' }),
 
   auditLog: (limit = 50) => request<{ results: AuditLogEntry[] }>(`/admin/audit-log?limit=${limit}`),
 

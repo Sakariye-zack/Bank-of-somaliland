@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
 import type { AdminUser } from '@bos/shared-types';
 
 const ROLES = ['super_admin', 'content_editor', 'supervision_data_officer', 'exchange_rate_officer'];
@@ -47,6 +47,22 @@ export function Users() {
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reset 2FA.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleDelete(user: AdminUser) {
+    if (!confirm(`Permanently delete the admin account for ${user.name} (${user.email})? This cannot be undone.`)) return;
+    setBusyId(user.id);
+    setMessage(null);
+    setError(null);
+    try {
+      await api.deleteUser(user.id);
+      setMessage(`${user.email} was deleted.`);
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to delete user.');
     } finally {
       setBusyId(null);
     }
@@ -140,6 +156,9 @@ export function Users() {
                       Reset 2FA
                     </button>
                   )}
+                  <button className="btn btn-danger" style={{ padding: '4px 10px', fontSize: 12 }} disabled={busyId === u.id} onClick={() => handleDelete(u)}>
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}

@@ -1,0 +1,11 @@
+bankofsomaliland.com, www.bankofsomaliland.com {
+    reverse_proxy public:80
+}
+
+admin.bankofsomaliland.com {
+    reverse_proxy admin:80
+}
+
+api.bankofsomaliland.com {
+    reverse_proxy api:4000
+}

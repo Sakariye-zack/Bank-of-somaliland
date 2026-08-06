@@ -236,6 +236,9 @@ export interface SiteSettings {
   country_label_so?: string;
   show_country_label?: boolean;
   country_flag_url?: string | null;
+  tagline_en?: string;
+  tagline_so?: string;
+  tagline_ar?: string;
 }
 
 export interface LawRegulation {

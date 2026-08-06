@@ -50,26 +50,27 @@ async function run() {
   const rateOfficerId = await upsertAdmin('Rate Officer', 'rate.officer@bankofsomaliland.so', 'exchange_rate_officer');
 
   console.log('Seeding exchange rates...');
-  const rates: [string, string][] = [
-    ['USD', '8900.0000'],
-    ['SAR', '2373.0000'],
-    ['ETB', '158.4000'],
-    ['AED', '2423.0000'],
+  const rates: [string, string, string, string][] = [
+    ['USD', '8900.0000', '8850.0000', '8950.0000'],
+    ['SAR', '2373.0000', '2360.0000', '2386.0000'],
+    ['ETB', '158.4000', '157.0000', '159.8000'],
+    ['AED', '2423.0000', '2410.0000', '2436.0000'],
   ];
-  for (const [currency_code, rate_to_ssh] of rates) {
+  for (const [currency_code, rate_to_ssh, buying_rate, selling_rate] of rates) {
     await pool.query(
-      `INSERT INTO exchange_rates (currency_code, rate_to_ssh, rate_date, entered_by)
-       VALUES ($1, $2, CURRENT_DATE, $3)
+      `INSERT INTO exchange_rates (currency_code, rate_to_ssh, buying_rate, selling_rate, rate_date, entered_by)
+       VALUES ($1, $2, $3, $4, CURRENT_DATE, $5)
        ON CONFLICT (currency_code, rate_date) DO NOTHING`,
-      [currency_code, rate_to_ssh, rateOfficerId]
+      [currency_code, rate_to_ssh, buying_rate, selling_rate, rateOfficerId]
     );
     await pool.query(
-      `INSERT INTO exchange_rates (currency_code, rate_to_ssh, rate_date, entered_by)
-       VALUES ($1, $2, CURRENT_DATE - INTERVAL '1 day', $3)
+      `INSERT INTO exchange_rates (currency_code, rate_to_ssh, buying_rate, selling_rate, rate_date, entered_by)
+       VALUES ($1, $2, $3, $4, CURRENT_DATE - INTERVAL '1 day', $5)
        ON CONFLICT (currency_code, rate_date) DO NOTHING`,
-      [currency_code, (parseFloat(rate_to_ssh) * 0.998).toFixed(4), rateOfficerId]
+      [currency_code, (parseFloat(rate_to_ssh) * 0.998).toFixed(4), (parseFloat(buying_rate) * 0.998).toFixed(4), (parseFloat(selling_rate) * 0.998).toFixed(4), rateOfficerId]
     );
   }
+
 
   console.log('Seeding licensed institutions...');
   const institutions: [string, string, string, string, string][] = [
