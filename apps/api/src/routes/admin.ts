@@ -792,6 +792,23 @@ adminRouter.put('/users/:id', requireRole('super_admin'), async (req, res) => {
   const before = beforeRes.rows[0];
   if (!before) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found.' } });
 
+  if (parsed.data.is_active === false) {
+    if (req.params.id === req.user!.sub) {
+      return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'You cannot deactivate your own account.' } });
+    }
+    if (before.role === 'super_admin') {
+      const { rows } = await pool.query(
+        `SELECT count(*)::int AS n FROM admin_users WHERE role = 'super_admin' AND is_active = true AND id != $1`,
+        [req.params.id]
+      );
+      if (rows[0].n === 0) {
+        return res.status(400).json({
+          error: { code: 'LAST_SUPER_ADMIN', message: 'Cannot deactivate the only remaining active super admin.' },
+        });
+      }
+    }
+  }
+
   const sets: string[] = [];
   const params: unknown[] = [];
   if (parsed.data.is_active !== undefined) {

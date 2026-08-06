@@ -52,6 +52,23 @@ export function Users() {
     }
   }
 
+  async function handleToggleActive(user: AdminUser) {
+    const activating = !user.is_active;
+    if (!confirm(activating ? `Reactivate ${user.email}?` : `Deactivate ${user.email}? They will not be able to sign in until reactivated.`)) return;
+    setBusyId(user.id);
+    setMessage(null);
+    setError(null);
+    try {
+      await api.setUserActive(user.id, activating);
+      setMessage(activating ? `${user.email} was reactivated.` : `${user.email} was deactivated.`);
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to update user status.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function handleDelete(user: AdminUser) {
     if (!confirm(`Permanently delete the admin account for ${user.name} (${user.email})? This cannot be undone.`)) return;
     setBusyId(user.id);
@@ -156,6 +173,9 @@ export function Users() {
                       Reset 2FA
                     </button>
                   )}
+                  <button className="btn" style={{ padding: '4px 10px', fontSize: 12 }} disabled={busyId === u.id} onClick={() => handleToggleActive(u)}>
+                    {u.is_active ? 'Deactivate' : 'Reactivate'}
+                  </button>
                   <button className="btn btn-danger" style={{ padding: '4px 10px', fontSize: 12 }} disabled={busyId === u.id} onClick={() => handleDelete(u)}>
                     Delete
                   </button>
