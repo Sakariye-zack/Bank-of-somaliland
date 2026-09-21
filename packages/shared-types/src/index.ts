@@ -265,6 +265,7 @@ export interface JobPosting {
   department: string | null;
   closing_date: string;
   status: JobStatus;
+  description?: string | null;
   fallback_used?: boolean;
 }
 
@@ -279,6 +280,7 @@ export interface Tender {
   closing_date: string;
   file_url: string | null;
   status?: 'open' | 'closed';
+  description?: string | null;
   fallback_used?: boolean;
 }
 
@@ -359,6 +361,7 @@ export interface JobPosting {
   department: string | null;
   closing_date: string;
   status: 'open' | 'closed';
+  description?: string | null;
   fallback_used?: boolean;
   language_served?: LanguageCode;
 }
@@ -374,6 +377,7 @@ export interface Tender {
   closing_date: string;
   file_url: string | null;
   status?: 'open' | 'closed';
+  description?: string | null;
   fallback_used?: boolean;
   language_served?: LanguageCode;
 }

@@ -397,6 +397,7 @@ publicRouter.get('/job-postings', async (req, res) => {
         department: row.department,
         closing_date: row.closing_date,
         status: row.status,
+        description: t.body,
         fallback_used: t.fallback_used,
       };
     })
@@ -423,6 +424,7 @@ publicRouter.get('/tenders', async (req, res) => {
         closing_date: row.closing_date,
         file_url: row.file_url,
         status: row.status,
+        description: t.body,
         fallback_used: t.fallback_used,
       };
     })

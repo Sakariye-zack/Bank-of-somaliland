@@ -564,6 +564,21 @@ const jobSchema = z.object({
   title: z.string().min(1).max(300),
   department: z.string().max(150).optional(),
   closing_date: z.string(),
+  description: z.string().max(8000).optional(),
+});
+
+adminRouter.get('/job-postings', requireRole('content_editor', 'super_admin'), async (_req, res) => {
+  const { rows } = await pool.query('SELECT * FROM job_postings ORDER BY closing_date DESC');
+  const results = await Promise.all(
+    rows.map(async (row) => {
+      const { rows: tRows } = await pool.query(
+        `SELECT title, body FROM content_translations WHERE content_id = $1 AND content_table = 'job_postings' AND language_code = 'en'`,
+        [row.title_content_id]
+      );
+      return { ...row, title: tRows[0]?.title ?? '(untitled)', description: tRows[0]?.body ?? null };
+    })
+  );
+  res.json({ results });
 });
 
 adminRouter.post('/job-postings', requireRole('content_editor', 'super_admin'), async (req, res) => {
@@ -571,7 +586,7 @@ adminRouter.post('/job-postings', requireRole('content_editor', 'super_admin'), 
   if (!parsed.success) {
     return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Invalid job posting payload.' } });
   }
-  const { title, department, closing_date } = parsed.data;
+  const { title, department, closing_date, description } = parsed.data;
 
   const { rows } = await pool.query(
     `INSERT INTO job_postings (title_content_id, department, closing_date)
@@ -579,9 +594,9 @@ adminRouter.post('/job-postings', requireRole('content_editor', 'super_admin'), 
     [department ?? null, closing_date]
   );
   await pool.query(
-    `INSERT INTO content_translations (content_id, content_table, language_code, title)
-     VALUES ($1, 'job_postings', 'en', $2)`,
-    [rows[0].title_content_id, title]
+    `INSERT INTO content_translations (content_id, content_table, language_code, title, body)
+     VALUES ($1, 'job_postings', 'en', $2, $3)`,
+    [rows[0].title_content_id, title, description ?? null]
   );
 
   await writeAuditLog(req, {
@@ -592,34 +607,102 @@ adminRouter.post('/job-postings', requireRole('content_editor', 'super_admin'), 
     after_value: { ...rows[0], title },
   });
 
-  res.status(201).json({ ...rows[0], title });
+  res.status(201).json({ ...rows[0], title, description: description ?? null });
+});
+
+const jobUpdateSchema = z.object({
+  title: z.string().min(1).max(300).optional(),
+  department: z.string().max(150).nullable().optional(),
+  closing_date: z.string().optional(),
+  description: z.string().max(8000).nullable().optional(),
+  status: z.enum(['open', 'closed']).optional(),
 });
 
 adminRouter.put('/job-postings/:id', requireRole('content_editor', 'super_admin'), async (req, res) => {
-  const schema = z.object({ status: z.enum(['open', 'closed']) });
-  const parsed = schema.safeParse(req.body);
+  const parsed = jobUpdateSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'status is required.' } });
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Invalid job posting payload.' } });
   }
 
   const beforeRes = await pool.query('SELECT * FROM job_postings WHERE id = $1', [req.params.id]);
   const before = beforeRes.rows[0];
   if (!before) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Job posting not found.' } });
 
-  const { rows } = await pool.query('UPDATE job_postings SET status = $1 WHERE id = $2 RETURNING *', [
-    parsed.data.status,
-    req.params.id,
-  ]);
+  const { title, department, closing_date, description, status } = parsed.data;
+
+  const sets: string[] = [];
+  const params: unknown[] = [];
+  if (department !== undefined) {
+    params.push(department);
+    sets.push(`department = $${params.length}`);
+  }
+  if (closing_date !== undefined) {
+    params.push(closing_date);
+    sets.push(`closing_date = $${params.length}`);
+  }
+  if (status !== undefined) {
+    params.push(status);
+    sets.push(`status = $${params.length}`);
+  }
+  if (sets.length > 0) {
+    params.push(req.params.id);
+    await pool.query(`UPDATE job_postings SET ${sets.join(', ')} WHERE id = $${params.length}`, params);
+  }
+  if (title !== undefined || description !== undefined) {
+    const tSets: string[] = [];
+    const tParams: unknown[] = [];
+    if (title !== undefined) {
+      tParams.push(title);
+      tSets.push(`title = $${tParams.length}`);
+    }
+    if (description !== undefined) {
+      tParams.push(description);
+      tSets.push(`body = $${tParams.length}`);
+    }
+    tParams.push(before.title_content_id);
+    await pool.query(
+      `UPDATE content_translations SET ${tSets.join(', ')} WHERE content_id = $${tParams.length} AND content_table = 'job_postings' AND language_code = 'en'`,
+      tParams
+    );
+  }
+
+  const { rows } = await pool.query('SELECT * FROM job_postings WHERE id = $1', [req.params.id]);
+  const { rows: tRows } = await pool.query(
+    `SELECT title, body FROM content_translations WHERE content_id = $1 AND content_table = 'job_postings' AND language_code = 'en'`,
+    [rows[0].title_content_id]
+  );
+  const after = { ...rows[0], title: tRows[0]?.title ?? '(untitled)', description: tRows[0]?.body ?? null };
 
   await writeAuditLog(req, {
     action: 'update',
     table_name: 'job_postings',
     record_id: rows[0].id,
     before_value: before,
-    after_value: rows[0],
+    after_value: after,
   });
 
-  res.json(rows[0]);
+  res.json(after);
+});
+
+adminRouter.delete('/job-postings/:id', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const beforeRes = await pool.query('SELECT * FROM job_postings WHERE id = $1', [req.params.id]);
+  const before = beforeRes.rows[0];
+  if (!before) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Job posting not found.' } });
+
+  await pool.query('DELETE FROM job_postings WHERE id = $1', [req.params.id]);
+  await pool.query(`DELETE FROM content_translations WHERE content_id = $1 AND content_table = 'job_postings'`, [
+    before.title_content_id,
+  ]);
+
+  await writeAuditLog(req, {
+    action: 'delete',
+    table_name: 'job_postings',
+    record_id: before.id,
+    before_value: before,
+    after_value: null,
+  });
+
+  res.json({ status: 'deleted' });
 });
 
 const tenderSchema = z.object({
@@ -627,20 +710,21 @@ const tenderSchema = z.object({
   reference_number: z.string().min(1).max(50),
   closing_date: z.string(),
   file_url: z.string().max(500).optional(),
+  description: z.string().max(8000).optional(),
 });
 
-async function getEnTitle(contentId: string, table: string): Promise<string> {
+async function getEnTitleAndBody(contentId: string, table: string): Promise<{ title: string; description: string | null }> {
   const { rows } = await pool.query(
-    `SELECT title FROM content_translations WHERE content_id = $1 AND content_table = $2 AND language_code = 'en'`,
+    `SELECT title, body FROM content_translations WHERE content_id = $1 AND content_table = $2 AND language_code = 'en'`,
     [contentId, table]
   );
-  return rows[0]?.title ?? '(untitled)';
+  return { title: rows[0]?.title ?? '(untitled)', description: rows[0]?.body ?? null };
 }
 
 adminRouter.get('/tenders', requireRole('content_editor', 'super_admin'), async (_req, res) => {
   const { rows } = await pool.query('SELECT * FROM tenders ORDER BY closing_date DESC');
   const results = await Promise.all(
-    rows.map(async (row) => ({ ...row, title: await getEnTitle(row.title_content_id, 'tenders') }))
+    rows.map(async (row) => ({ ...row, ...(await getEnTitleAndBody(row.title_content_id, 'tenders')) }))
   );
   res.json({ results });
 });
@@ -650,7 +734,7 @@ adminRouter.post('/tenders', requireRole('content_editor', 'super_admin'), async
   if (!parsed.success) {
     return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Invalid tender payload.' } });
   }
-  const { title, reference_number, closing_date, file_url } = parsed.data;
+  const { title, reference_number, closing_date, file_url, description } = parsed.data;
 
   const existing = await pool.query('SELECT id FROM tenders WHERE reference_number = $1', [reference_number]);
   if (existing.rows.length > 0) {
@@ -663,9 +747,9 @@ adminRouter.post('/tenders', requireRole('content_editor', 'super_admin'), async
     [reference_number, closing_date, file_url ?? null]
   );
   await pool.query(
-    `INSERT INTO content_translations (content_id, content_table, language_code, title)
-     VALUES ($1, 'tenders', 'en', $2)`,
-    [rows[0].title_content_id, title]
+    `INSERT INTO content_translations (content_id, content_table, language_code, title, body)
+     VALUES ($1, 'tenders', 'en', $2, $3)`,
+    [rows[0].title_content_id, title, description ?? null]
   );
 
   await writeAuditLog(req, {
@@ -676,7 +760,7 @@ adminRouter.post('/tenders', requireRole('content_editor', 'super_admin'), async
     after_value: { ...rows[0], title },
   });
 
-  res.status(201).json({ ...rows[0], title });
+  res.status(201).json({ ...rows[0], title, description: description ?? null });
 });
 
 const tenderUpdateSchema = z.object({
@@ -685,6 +769,7 @@ const tenderUpdateSchema = z.object({
   closing_date: z.string().optional(),
   file_url: z.string().max(500).nullable().optional(),
   status: z.enum(['open', 'closed']).optional(),
+  description: z.string().max(8000).nullable().optional(),
 });
 
 adminRouter.put('/tenders/:id', requireRole('content_editor', 'super_admin'), async (req, res) => {
@@ -697,7 +782,7 @@ adminRouter.put('/tenders/:id', requireRole('content_editor', 'super_admin'), as
   const before = beforeRes.rows[0];
   if (!before) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Tender not found.' } });
 
-  const { title, reference_number, closing_date, file_url, status } = parsed.data;
+  const { title, reference_number, closing_date, file_url, status, description } = parsed.data;
 
   if (reference_number && reference_number !== before.reference_number) {
     const existing = await pool.query('SELECT id FROM tenders WHERE reference_number = $1 AND id != $2', [
@@ -731,15 +816,26 @@ adminRouter.put('/tenders/:id', requireRole('content_editor', 'super_admin'), as
     params.push(req.params.id);
     await pool.query(`UPDATE tenders SET ${sets.join(', ')} WHERE id = $${params.length}`, params);
   }
-  if (title !== undefined) {
+  if (title !== undefined || description !== undefined) {
+    const tSets: string[] = [];
+    const tParams: unknown[] = [];
+    if (title !== undefined) {
+      tParams.push(title);
+      tSets.push(`title = $${tParams.length}`);
+    }
+    if (description !== undefined) {
+      tParams.push(description);
+      tSets.push(`body = $${tParams.length}`);
+    }
+    tParams.push(before.title_content_id);
     await pool.query(
-      `UPDATE content_translations SET title = $1 WHERE content_id = $2 AND content_table = 'tenders' AND language_code = 'en'`,
-      [title, before.title_content_id]
+      `UPDATE content_translations SET ${tSets.join(', ')} WHERE content_id = $${tParams.length} AND content_table = 'tenders' AND language_code = 'en'`,
+      tParams
     );
   }
 
   const { rows } = await pool.query('SELECT * FROM tenders WHERE id = $1', [req.params.id]);
-  const after = { ...rows[0], title: await getEnTitle(rows[0].title_content_id, 'tenders') };
+  const after = { ...rows[0], ...(await getEnTitleAndBody(rows[0].title_content_id, 'tenders')) };
 
   await writeAuditLog(req, {
     action: 'update',

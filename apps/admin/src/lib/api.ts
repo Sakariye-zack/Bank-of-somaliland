@@ -322,16 +322,29 @@ export const api = {
   markMessageRead: (id: string) => request(`/admin/contact-messages/${id}/read`, { method: 'PUT' }),
   deleteContactMessage: (id: string) => request(`/admin/contact-messages/${id}`, { method: 'DELETE' }),
 
-  jobPostings: (status: 'open' | 'closed') =>
-    request<{ results: JobPosting[] }>(`/job-postings?status=${status}`),
-  createJobPosting: (payload: { title: string; department?: string; closing_date: string }) =>
+  jobPostings: () => request<{ results: JobPosting[] }>('/admin/job-postings'),
+  createJobPosting: (payload: { title: string; department?: string; closing_date: string; description?: string }) =>
     request<JobPosting>('/admin/job-postings', { method: 'POST', body: JSON.stringify(payload) }),
-  updateJobPostingStatus: (id: string, status: 'open' | 'closed') =>
-    request<JobPosting>(`/admin/job-postings/${id}`, { method: 'PUT', body: JSON.stringify({ status }) }),
+  updateJobPosting: (
+    id: string,
+    payload: Partial<{
+      title: string;
+      department: string | null;
+      closing_date: string;
+      description: string | null;
+      status: 'open' | 'closed';
+    }>
+  ) => request<JobPosting>(`/admin/job-postings/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteJobPosting: (id: string) => request(`/admin/job-postings/${id}`, { method: 'DELETE' }),
 
   tenders: () => request<{ results: Tender[] }>('/admin/tenders'),
-  createTender: (payload: { title: string; reference_number: string; closing_date: string; file_url?: string }) =>
-    request<Tender>('/admin/tenders', { method: 'POST', body: JSON.stringify(payload) }),
+  createTender: (payload: {
+    title: string;
+    reference_number: string;
+    closing_date: string;
+    file_url?: string;
+    description?: string;
+  }) => request<Tender>('/admin/tenders', { method: 'POST', body: JSON.stringify(payload) }),
   updateTender: (
     id: string,
     payload: Partial<{
@@ -340,6 +353,7 @@ export const api = {
       closing_date: string;
       file_url: string | null;
       status: 'open' | 'closed';
+      description: string | null;
     }>
   ) => request<Tender>(`/admin/tenders/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
   deleteTender: (id: string) => request(`/admin/tenders/${id}`, { method: 'DELETE' }),

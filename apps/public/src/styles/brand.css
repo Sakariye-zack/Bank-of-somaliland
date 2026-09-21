@@ -4253,6 +4253,16 @@ table.inst-table td {
   font-size: 16.5px;
   margin: 0;
 }
+.list-card-desc {
+  font-size: 13px;
+  color: #5c5546;
+  line-height: 1.5;
+  margin: 6px 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .list-card-closing {
   flex: 0 0 auto;
   text-align: right;

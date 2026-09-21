@@ -8,12 +8,12 @@ export function TendersAdmin() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ title: '', reference_number: '', closing_date: '' });
+  const [form, setForm] = useState({ title: '', reference_number: '', closing_date: '', description: '' });
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ title: '', reference_number: '', closing_date: '' });
+  const [editForm, setEditForm] = useState({ title: '', reference_number: '', closing_date: '', description: '' });
 
   function load() {
     api.tenders().then((r) => setTenders(r.results)).catch((e) => setError(e.message));
@@ -34,7 +34,7 @@ export function TendersAdmin() {
       }
       await api.createTender({ ...form, file_url });
       setMessage('Tender published.');
-      setForm({ title: '', reference_number: '', closing_date: '' });
+      setForm({ title: '', reference_number: '', closing_date: '', description: '' });
       setFile(null);
       if (fileRef.current) fileRef.current.value = '';
       load();
@@ -47,7 +47,12 @@ export function TendersAdmin() {
 
   function startEdit(t: Tender) {
     setEditingId(t.id);
-    setEditForm({ title: t.title, reference_number: t.reference_number, closing_date: t.closing_date.slice(0, 10) });
+    setEditForm({
+      title: t.title,
+      reference_number: t.reference_number,
+      closing_date: t.closing_date.slice(0, 10),
+      description: t.description ?? '',
+    });
     setMessage(null);
     setError(null);
   }
@@ -132,6 +137,15 @@ export function TendersAdmin() {
             />
           </div>
           <div className="form-row">
+            <label>Description</label>
+            <textarea
+              rows={5}
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="Scope, eligibility, submission instructions…"
+            />
+          </div>
+          <div className="form-row">
             <label>Tender document (PDF, optional)</label>
             <input ref={fileRef} type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
           </div>
@@ -149,6 +163,7 @@ export function TendersAdmin() {
               <th>Title</th>
               <th>Ref. No.</th>
               <th>Closes</th>
+              <th>Description</th>
               <th>Status</th>
               <th>File</th>
               <th></th>
@@ -172,6 +187,15 @@ export function TendersAdmin() {
                       type="date"
                       value={editForm.closing_date}
                       onChange={(e) => setEditForm({ ...editForm, closing_date: e.target.value })}
+                    />
+                  </td>
+                  <td>
+                    <textarea
+                      rows={2}
+                      style={{ width: '100%' }}
+                      placeholder="Description"
+                      value={editForm.description}
+                      onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                     />
                   </td>
                   <td>{t.status === 'closed' ? 'Inactive' : 'Active'}</td>
@@ -203,6 +227,9 @@ export function TendersAdmin() {
                   <td>{t.title}</td>
                   <td>{t.reference_number}</td>
                   <td>{t.closing_date}</td>
+                  <td style={{ color: t.description ? 'inherit' : 'var(--bronze)', maxWidth: 260 }}>
+                    {t.description ? (t.description.length > 120 ? t.description.slice(0, 120) + '…' : t.description) : 'No description'}
+                  </td>
                   <td>{t.status === 'closed' ? 'Inactive' : 'Active'}</td>
                   <td>
                     {t.file_url ? (
@@ -239,7 +266,7 @@ export function TendersAdmin() {
             )}
             {tenders.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ color: 'var(--bronze)' }}>
+                <td colSpan={7} style={{ color: 'var(--bronze)' }}>
                   No tenders yet.
                 </td>
               </tr>

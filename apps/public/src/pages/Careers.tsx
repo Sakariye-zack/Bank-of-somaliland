@@ -45,6 +45,7 @@ export function Careers() {
                   <div className="list-card-body">
                     <span className="list-card-tag">{job.department ?? t('bankName')}</span>
                     <h4>{job.title}</h4>
+                    {job.description && <p className="list-card-desc">{job.description}</p>}
                   </div>
                   <div className="list-card-closing">
                     {t('closes')}
@@ -79,6 +80,7 @@ export function Careers() {
                       {t('ref')} {tender.reference_number}
                     </span>
                     <h4>{tender.title}</h4>
+                    {tender.description && <p className="list-card-desc">{tender.description}</p>}
                     {tender.file_url && (
                       <a className="list-card-dl" href={mediaUrl(tender.file_url)} target="_blank" rel="noreferrer">
                         {t('downloadTender')}
