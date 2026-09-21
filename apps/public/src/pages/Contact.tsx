@@ -12,6 +12,9 @@ export function Contact() {
   const t = useT();
   const { lang } = useLanguage();
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  // Honeypot: a field real visitors never see or fill, but form-filling bots
+  // do. Any non-empty value here means the submission is spam.
+  const [website, setWebsite] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
@@ -30,9 +33,10 @@ export function Contact() {
     setStatus('sending');
     setError(null);
     try {
-      await api.submitContact(form);
+      await api.submitContact({ ...form, website });
       setStatus('sent');
       setForm({ name: '', email: '', subject: '', message: '' });
+      setWebsite('');
     } catch (err) {
       setStatus('error');
       setError(err instanceof Error ? err.message : t('somethingWrong'));
@@ -60,6 +64,16 @@ export function Contact() {
               {status === 'error' && <div className="status-error">{error}</div>}
 
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <input
+                  type="text"
+                  name="website"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                  style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
+                />
                 <input
                   type="text"
                   placeholder={t('fullName')}

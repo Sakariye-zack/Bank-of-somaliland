@@ -320,6 +320,7 @@ export const api = {
 
   contactMessages: () => request<ContactMessagesResponse>('/admin/contact-messages'),
   markMessageRead: (id: string) => request(`/admin/contact-messages/${id}/read`, { method: 'PUT' }),
+  deleteContactMessage: (id: string) => request(`/admin/contact-messages/${id}`, { method: 'DELETE' }),
 
   jobPostings: (status: 'open' | 'closed') =>
     request<{ results: JobPosting[] }>(`/job-postings?status=${status}`),

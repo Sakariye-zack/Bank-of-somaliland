@@ -53,6 +53,9 @@ const contactSchema = z.object({
   email: z.string().trim().email().max(255),
   subject: z.string().trim().min(1).max(200),
   message: z.string().trim().min(1).max(4000),
+  // Honeypot: a field hidden from real visitors via CSS. Only form-filling
+  // bots populate it, so any non-empty value marks the submission as spam.
+  website: z.string().optional(),
 });
 
 function stripTags(input: string): string {
@@ -64,7 +67,12 @@ publicRouter.post('/contact', async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Please fill in all fields with a valid email.' } });
   }
-  const { name, email, subject, message } = parsed.data;
+  const { name, email, subject, message, website } = parsed.data;
+
+  if (website) {
+    // Pretend success so the bot doesn't learn to adapt — just don't store it.
+    return res.status(201).json({ status: 'received' });
+  }
 
   await pool.query(
     `INSERT INTO contact_messages (name, email, subject, message, ip_address) VALUES ($1, $2, $3, $4, $5)`,

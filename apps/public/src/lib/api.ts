@@ -71,7 +71,7 @@ export const api = {
       `/publications?lang=${lang}${category ? `&category=${category}` : ''}${limit ? `&limit=${limit}` : ''}`
     ),
   content: (slug: string, lang: string) => get<ContentResponse>(`/content/${slug}?lang=${lang}`),
-  submitContact: (payload: { name: string; email: string; subject: string; message: string }) =>
+  submitContact: (payload: { name: string; email: string; subject: string; message: string; website?: string }) =>
     post<{ status: string }>('/contact', payload),
   lawsRegulations: (lang: LanguageCode = 'en') => get<LawsRegulationsResponse>(`/laws-regulations?lang=${lang}`),
   jobPostings: (lang: LanguageCode = 'en') => get<JobPostingsResponse>(`/job-postings?lang=${lang}`),

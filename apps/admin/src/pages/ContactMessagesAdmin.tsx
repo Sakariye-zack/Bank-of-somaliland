@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useState, type MouseEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import type { ContactMessage } from '@bos/shared-types';
 
@@ -7,6 +7,7 @@ export function ContactMessagesAdmin() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   function load() {
     api
@@ -31,6 +32,24 @@ export function ContactMessagesAdmin() {
       } catch {
         // Non-critical — the message still opens even if the read-receipt call fails.
       }
+    }
+  }
+
+  async function handleDelete(e: MouseEvent, msg: ContactMessage) {
+    e.stopPropagation();
+    if (!confirm(`Delete the message from "${msg.name}" (${msg.email})? This cannot be undone.`)) return;
+    setBusyId(msg.id);
+    setError(null);
+    try {
+      await api.deleteContactMessage(msg.id);
+      setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+      if (!msg.is_read) setUnreadCount((n) => Math.max(0, n - 1));
+      if (openId === msg.id) setOpenId(null);
+      window.dispatchEvent(new Event('contact-message-read'));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to delete message.');
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -76,11 +95,21 @@ export function ContactMessagesAdmin() {
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--bronze)' }}>
                     {new Date(m.created_at).toLocaleString()}
                   </td>
+                  <td>
+                    <button
+                      className="btn btn-danger"
+                      style={{ padding: '4px 10px', fontSize: 12 }}
+                      disabled={busyId === m.id}
+                      onClick={(e) => handleDelete(e, m)}
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
                 {openId === m.id && (
                   <tr>
                     <td></td>
-                    <td colSpan={4} style={{ background: 'var(--parchment-2)', whiteSpace: 'pre-wrap' }}>
+                    <td colSpan={5} style={{ background: 'var(--parchment-2)', whiteSpace: 'pre-wrap' }}>
                       {m.message}
                     </td>
                   </tr>

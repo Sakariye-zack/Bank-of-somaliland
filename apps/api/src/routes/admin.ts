@@ -844,6 +844,12 @@ adminRouter.put('/contact-messages/:id/read', requireRole('content_editor', 'sup
   res.json(rows[0]);
 });
 
+adminRouter.delete('/contact-messages/:id', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const { rows } = await pool.query('DELETE FROM contact_messages WHERE id = $1 RETURNING id', [req.params.id]);
+  if (rows.length === 0) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Message not found.' } });
+  res.json({ status: 'deleted' });
+});
+
 // ---------------------------------------------------------------------------
 // Users — super_admin only
 // ---------------------------------------------------------------------------
