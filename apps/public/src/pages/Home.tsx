@@ -255,7 +255,7 @@ export function Home() {
 
       <Reveal>
         <section className="home-section">
-          <div className="wrap home-split">
+          <div className="wrap home-stack">
             <div>
               <div className="section-head">
                 <div>

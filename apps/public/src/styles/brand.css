@@ -1406,6 +1406,7 @@ section {
   align-items: flex-end;
   margin-bottom: 28px;
   gap: 20px;
+  flex-wrap: wrap;
 }
 .section-kicker {
   display: inline-flex;
@@ -3081,6 +3082,35 @@ table.inst-table td {
 }
 .home-split .news-item {
   min-width: 0;
+}
+/* Announcements + Publications each get the full page width, stacked, rather
+   than squeezing two 3-up card rows into half-width columns side by side —
+   that made every card too narrow for its title and thumbnail. */
+.home-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+.home-stack .news-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  overflow-x: visible;
+}
+.home-stack .news-item {
+  min-width: 0;
+}
+@media (max-width: 900px) {
+  .home-stack .news-strip,
+  .pub-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 1200px) and (min-width: 901px) {
+  .home-stack .news-strip,
+  .pub-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 .home-panel {
   background: #fff;
