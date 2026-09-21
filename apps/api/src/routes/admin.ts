@@ -629,6 +629,22 @@ const tenderSchema = z.object({
   file_url: z.string().max(500).optional(),
 });
 
+async function getEnTitle(contentId: string, table: string): Promise<string> {
+  const { rows } = await pool.query(
+    `SELECT title FROM content_translations WHERE content_id = $1 AND content_table = $2 AND language_code = 'en'`,
+    [contentId, table]
+  );
+  return rows[0]?.title ?? '(untitled)';
+}
+
+adminRouter.get('/tenders', requireRole('content_editor', 'super_admin'), async (_req, res) => {
+  const { rows } = await pool.query('SELECT * FROM tenders ORDER BY closing_date DESC');
+  const results = await Promise.all(
+    rows.map(async (row) => ({ ...row, title: await getEnTitle(row.title_content_id, 'tenders') }))
+  );
+  res.json({ results });
+});
+
 adminRouter.post('/tenders', requireRole('content_editor', 'super_admin'), async (req, res) => {
   const parsed = tenderSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -661,6 +677,100 @@ adminRouter.post('/tenders', requireRole('content_editor', 'super_admin'), async
   });
 
   res.status(201).json({ ...rows[0], title });
+});
+
+const tenderUpdateSchema = z.object({
+  title: z.string().min(1).max(300).optional(),
+  reference_number: z.string().min(1).max(50).optional(),
+  closing_date: z.string().optional(),
+  file_url: z.string().max(500).nullable().optional(),
+  status: z.enum(['open', 'closed']).optional(),
+});
+
+adminRouter.put('/tenders/:id', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const parsed = tenderUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Invalid tender payload.' } });
+  }
+
+  const beforeRes = await pool.query('SELECT * FROM tenders WHERE id = $1', [req.params.id]);
+  const before = beforeRes.rows[0];
+  if (!before) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Tender not found.' } });
+
+  const { title, reference_number, closing_date, file_url, status } = parsed.data;
+
+  if (reference_number && reference_number !== before.reference_number) {
+    const existing = await pool.query('SELECT id FROM tenders WHERE reference_number = $1 AND id != $2', [
+      reference_number,
+      req.params.id,
+    ]);
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ error: { code: 'CONFLICT', message: 'A tender with this reference number already exists.' } });
+    }
+  }
+
+  const sets: string[] = [];
+  const params: unknown[] = [];
+  if (reference_number !== undefined) {
+    params.push(reference_number);
+    sets.push(`reference_number = $${params.length}`);
+  }
+  if (closing_date !== undefined) {
+    params.push(closing_date);
+    sets.push(`closing_date = $${params.length}`);
+  }
+  if (file_url !== undefined) {
+    params.push(file_url);
+    sets.push(`file_url = $${params.length}`);
+  }
+  if (status !== undefined) {
+    params.push(status);
+    sets.push(`status = $${params.length}`);
+  }
+  if (sets.length > 0) {
+    params.push(req.params.id);
+    await pool.query(`UPDATE tenders SET ${sets.join(', ')} WHERE id = $${params.length}`, params);
+  }
+  if (title !== undefined) {
+    await pool.query(
+      `UPDATE content_translations SET title = $1 WHERE content_id = $2 AND content_table = 'tenders' AND language_code = 'en'`,
+      [title, before.title_content_id]
+    );
+  }
+
+  const { rows } = await pool.query('SELECT * FROM tenders WHERE id = $1', [req.params.id]);
+  const after = { ...rows[0], title: await getEnTitle(rows[0].title_content_id, 'tenders') };
+
+  await writeAuditLog(req, {
+    action: 'update',
+    table_name: 'tenders',
+    record_id: rows[0].id,
+    before_value: before,
+    after_value: after,
+  });
+
+  res.json(after);
+});
+
+adminRouter.delete('/tenders/:id', requireRole('content_editor', 'super_admin'), async (req, res) => {
+  const beforeRes = await pool.query('SELECT * FROM tenders WHERE id = $1', [req.params.id]);
+  const before = beforeRes.rows[0];
+  if (!before) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Tender not found.' } });
+
+  await pool.query('DELETE FROM tenders WHERE id = $1', [req.params.id]);
+  await pool.query(`DELETE FROM content_translations WHERE content_id = $1 AND content_table = 'tenders'`, [
+    before.title_content_id,
+  ]);
+
+  await writeAuditLog(req, {
+    action: 'delete',
+    table_name: 'tenders',
+    record_id: before.id,
+    before_value: before,
+    after_value: null,
+  });
+
+  res.json({ status: 'deleted' });
 });
 
 // ---------------------------------------------------------------------------

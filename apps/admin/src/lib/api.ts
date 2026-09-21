@@ -328,9 +328,20 @@ export const api = {
   updateJobPostingStatus: (id: string, status: 'open' | 'closed') =>
     request<JobPosting>(`/admin/job-postings/${id}`, { method: 'PUT', body: JSON.stringify({ status }) }),
 
-  tenders: () => request<{ results: Tender[] }>('/tenders'),
+  tenders: () => request<{ results: Tender[] }>('/admin/tenders'),
   createTender: (payload: { title: string; reference_number: string; closing_date: string; file_url?: string }) =>
     request<Tender>('/admin/tenders', { method: 'POST', body: JSON.stringify(payload) }),
+  updateTender: (
+    id: string,
+    payload: Partial<{
+      title: string;
+      reference_number: string;
+      closing_date: string;
+      file_url: string | null;
+      status: 'open' | 'closed';
+    }>
+  ) => request<Tender>(`/admin/tenders/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteTender: (id: string) => request(`/admin/tenders/${id}`, { method: 'DELETE' }),
 
   faqs: () => request<{ results: (Faq & { question_so?: string | null; question_ar?: string | null; answer_so?: string | null; answer_ar?: string | null; sort_order: number; is_active: boolean })[] }>('/admin/faqs'),
   createFaq: (payload: {

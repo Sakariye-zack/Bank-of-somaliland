@@ -398,9 +398,11 @@ publicRouter.get('/job-postings', async (req, res) => {
 });
 
 publicRouter.get('/tenders', async (req, res) => {
+  const status = req.query.status ? String(req.query.status) : 'open';
   const lang = parseLang(req.query.lang);
   const { rows } = await pool.query(
-    `SELECT id, title_content_id, reference_number, closing_date, file_url FROM tenders ORDER BY closing_date ASC`
+    `SELECT id, title_content_id, reference_number, closing_date, file_url, status FROM tenders WHERE status = $1 ORDER BY closing_date ASC`,
+    [status]
   );
 
   const results = await Promise.all(
@@ -412,6 +414,7 @@ publicRouter.get('/tenders', async (req, res) => {
         reference_number: row.reference_number,
         closing_date: row.closing_date,
         file_url: row.file_url,
+        status: row.status,
         fallback_used: t.fallback_used,
       };
     })

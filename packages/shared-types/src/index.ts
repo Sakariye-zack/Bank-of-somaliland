@@ -278,6 +278,7 @@ export interface Tender {
   reference_number: string;
   closing_date: string;
   file_url: string | null;
+  status?: 'open' | 'closed';
   fallback_used?: boolean;
 }
 
@@ -372,6 +373,7 @@ export interface Tender {
   reference_number: string;
   closing_date: string;
   file_url: string | null;
+  status?: 'open' | 'closed';
   fallback_used?: boolean;
   language_served?: LanguageCode;
 }

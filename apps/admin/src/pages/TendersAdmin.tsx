@@ -11,6 +11,9 @@ export function TendersAdmin() {
   const [form, setForm] = useState({ title: '', reference_number: '', closing_date: '' });
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ title: '', reference_number: '', closing_date: '' });
 
   function load() {
     api.tenders().then((r) => setTenders(r.results)).catch((e) => setError(e.message));
@@ -39,6 +42,61 @@ export function TendersAdmin() {
       setError(err instanceof ApiError ? err.message : 'Failed to publish tender.');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  function startEdit(t: Tender) {
+    setEditingId(t.id);
+    setEditForm({ title: t.title, reference_number: t.reference_number, closing_date: t.closing_date.slice(0, 10) });
+    setMessage(null);
+    setError(null);
+  }
+
+  async function saveEdit(id: string) {
+    setBusyId(id);
+    setError(null);
+    setMessage(null);
+    try {
+      await api.updateTender(id, editForm);
+      setMessage('Tender updated.');
+      setEditingId(null);
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to update tender.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleToggleStatus(t: Tender) {
+    const nextStatus = t.status === 'closed' ? 'open' : 'closed';
+    setBusyId(t.id);
+    setError(null);
+    setMessage(null);
+    try {
+      await api.updateTender(t.id, { status: nextStatus });
+      setMessage(nextStatus === 'open' ? `${t.title} marked active.` : `${t.title} marked inactive.`);
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to update tender status.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleDelete(t: Tender) {
+    if (!confirm(`Permanently delete the tender "${t.title}"? This cannot be undone.`)) return;
+    setBusyId(t.id);
+    setError(null);
+    setMessage(null);
+    try {
+      await api.deleteTender(t.id);
+      setMessage('Tender deleted.');
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to delete tender.');
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -91,29 +149,97 @@ export function TendersAdmin() {
               <th>Title</th>
               <th>Ref. No.</th>
               <th>Closes</th>
+              <th>Status</th>
               <th>File</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
-            {tenders.map((t) => (
-              <tr key={t.id}>
-                <td>{t.title}</td>
-                <td>{t.reference_number}</td>
-                <td>{t.closing_date}</td>
-                <td>
-                  {t.file_url ? (
-                    <a href={mediaUrl(t.file_url)} target="_blank" rel="noreferrer">
-                      View PDF
-                    </a>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-              </tr>
-            ))}
+            {tenders.map((t) =>
+              editingId === t.id ? (
+                <tr key={t.id}>
+                  <td>
+                    <input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
+                  </td>
+                  <td>
+                    <input
+                      value={editForm.reference_number}
+                      onChange={(e) => setEditForm({ ...editForm, reference_number: e.target.value })}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      value={editForm.closing_date}
+                      onChange={(e) => setEditForm({ ...editForm, closing_date: e.target.value })}
+                    />
+                  </td>
+                  <td>{t.status === 'closed' ? 'Inactive' : 'Active'}</td>
+                  <td>
+                    {t.file_url ? (
+                      <a href={mediaUrl(t.file_url)} target="_blank" rel="noreferrer">
+                        View PDF
+                      </a>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                  <td style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      className="btn btn-primary"
+                      style={{ padding: '4px 10px', fontSize: 12 }}
+                      disabled={busyId === t.id}
+                      onClick={() => saveEdit(t.id)}
+                    >
+                      Save
+                    </button>
+                    <button className="btn" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => setEditingId(null)}>
+                      Cancel
+                    </button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={t.id}>
+                  <td>{t.title}</td>
+                  <td>{t.reference_number}</td>
+                  <td>{t.closing_date}</td>
+                  <td>{t.status === 'closed' ? 'Inactive' : 'Active'}</td>
+                  <td>
+                    {t.file_url ? (
+                      <a href={mediaUrl(t.file_url)} target="_blank" rel="noreferrer">
+                        View PDF
+                      </a>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                  <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <button className="btn" style={{ padding: '4px 10px', fontSize: 12 }} disabled={busyId === t.id} onClick={() => startEdit(t)}>
+                      Edit
+                    </button>
+                    <button
+                      className="btn"
+                      style={{ padding: '4px 10px', fontSize: 12 }}
+                      disabled={busyId === t.id}
+                      onClick={() => handleToggleStatus(t)}
+                    >
+                      {t.status === 'closed' ? 'Mark active' : 'Mark inactive'}
+                    </button>
+                    <button
+                      className="btn btn-danger"
+                      style={{ padding: '4px 10px', fontSize: 12 }}
+                      disabled={busyId === t.id}
+                      onClick={() => handleDelete(t)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              )
+            )}
             {tenders.length === 0 && (
               <tr>
-                <td colSpan={4} style={{ color: 'var(--bronze)' }}>
+                <td colSpan={6} style={{ color: 'var(--bronze)' }}>
                   No tenders yet.
                 </td>
               </tr>
