@@ -53,20 +53,20 @@ export function Dashboard() {
       canSeeInstitutions ? api.institutions() : Promise.resolve({ results: [] }),
       canSeeContent ? api.publications() : Promise.resolve({ results: [] }),
       canSeeContent ? api.pressReleases() : Promise.resolve({ results: [] }),
-      canSeeContent ? api.jobPostings('open') : Promise.resolve({ results: [] }),
+      canSeeContent ? api.jobPostings() : Promise.resolve({ results: [] }),
       canSeeContent ? api.tenders() : Promise.resolve({ results: [] }),
       canSeeContent ? api.contactMessages() : Promise.resolve({ results: [], unread_count: 0 }),
       canSeeContent ? api.newsletterSubscribers() : Promise.resolve({ results: [] }),
       canSeeContent ? api.faqs() : Promise.resolve({ results: [] }),
       canSeeContent ? api.bankBranches() : Promise.resolve({ results: [] }),
     ])
-      .then(([institutions, publications, pressReleases, openJobs, tenders, messages, subscribers, faqs, branches]) => {
+      .then(([institutions, publications, pressReleases, jobs, tenders, messages, subscribers, faqs, branches]) => {
         const today = new Date().toISOString().slice(0, 10);
         setStats({
           institutions: institutions.results.length,
           publications: publications.results.length,
           pressReleases: pressReleases.results.length,
-          openJobs: openJobs.results.length,
+          openJobs: jobs.results.filter((j) => j.status === 'open').length,
           openTenders: tenders.results.filter((t) => t.closing_date >= today).length,
           pendingMessages: messages.unread_count,
           subscribers: subscribers.results.length,
